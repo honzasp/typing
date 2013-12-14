@@ -1,0 +1,36 @@
+id = \x.x;
+const = \x.\y.x;
+
+tru = \t.\f.t;
+fls = \t.\f.f;
+
+and = \a.\b. a b fls;
+or = \a.\b. a tru b;
+not = \a.a fls tru;
+
+pair = \f.\s.\p. p f s;
+fst = \p.p tru;
+snd = \p.p fls;
+
+c0 = \s.\z. z;
+c1 = \s.\z. s z;
+c2 = \s.\z. s(s z);
+c3 = \s.\z. s(s(s z));
+c4 = \s.\z. s(s(s(s z)));
+c5 = \s.\z. s(s(s(s( s z))));
+c6 = \s.\z. s(s(s(s( s(s z)))));
+c7 = \s.\z. s(s(s(s( s(s(s z))))));
+c8 = \s.\z. s(s(s(s( s(s(s(s z)))))));
+c9 = \s.\z. s(s(s(s( s(s(s(s (s z))))))));
+
+iszro = \a. a (const fls) tru;
+scc = \n. \s.\z. n s (s z);
+plus = \a.\b. \s.\z. a s (b s z);
+times = \a.\b. \s.\z. a (b s) z;
+power = \a.\b. \s.\z. b (times b) c1;
+power = \a.\b. a b;
+
+prd = \a. fst (a (\p.pair(snd p)(scc (snd p))) (pair c0 c0));
+minus = \a.\b. b prd a;
+
+equal = \a.\b. and (iszro (minus a b)) (iszro (minus b a));
