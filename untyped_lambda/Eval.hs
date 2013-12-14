@@ -1,5 +1,8 @@
-module Eval where
-import Syntax
+module Eval(eval) where
+import Control.Monad.Instances()
+
+import Context
+import Term
 
 shiftTerm :: Int -> Term -> Term
 shiftTerm d = shift 0 where
@@ -18,8 +21,8 @@ substTerm j s t = case t of
 
 eval :: Context -> Term -> Term
 eval ctx (TmApp t1 t2)
-  | TmAbs x t12 <- v1 = eval ctx $ shiftTerm (-1) $ substTerm 0 (shiftTerm 1 v2) t12
+  | TmAbs _ t12 <- v1 = eval ctx $ shiftTerm (-1) $ substTerm 0 (shiftTerm 1 v2) t12
   where (v1,v2) = (eval ctx t1,eval ctx t2)
 eval ctx (TmVar k)
   | TermBind t <- ctxLookup k ctx = eval ctx $ shiftTerm (k+1) t
-eval ctx t = t
+eval _ t = t

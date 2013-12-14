@@ -1,9 +1,11 @@
+{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 module Parser(InCtx, parseMod, parseCommand) where
-import Control.Applicative((<*), (<*>), (<$>), liftA2)
-import Data.Char
+import Control.Applicative((<*), (<*>), (<$>))
 import Text.Parsec
 
-import Syntax
+import Command
+import Context
+import Term
 
 type Parser = Parsec String ()
 
@@ -21,12 +23,14 @@ modul :: Parser [Command]
 modul = command `sepBy` symbol ';'
 
 command :: Parser Command
-command = try bindNameCmd <|> try bindTermCmd <|> try specialCmd
+command = try bindNameCmd <|> try bindTermCmd 
+  <|> try special1Cmd <|> try special0Cmd
   <|> (CmdEvalTerm <$> try term) <|> return CmdEmpty
 
 bindNameCmd = CmdBindName <$> (identifier <* symbol '/')
 bindTermCmd = CmdBindTerm <$> (identifier <* symbol '=') <*> term
-specialCmd = CmdSpecial <$> (symbol ':' >> identifier)
+special0Cmd = CmdSpecial0 <$> (symbol ':' >> identifier)
+special1Cmd = CmdSpecial1 <$> (symbol ':' >> identifier) <*> term
 
 term :: Parser (InCtx Term)
 term = atomicTerm `chainl1` (return app) where
@@ -40,7 +44,7 @@ atomicTerm = try varTerm <|> try absTerm <|>
 varTerm :: Parser (InCtx Term)
 varTerm = do
   x <- identifier
-  return $ (TmVar <$>) . ctxLookupIndex x
+  return $ \ctx -> TmVar <$> ctxLookupIndex x ctx
 
 absTerm :: Parser (InCtx Term)
 absTerm = do
