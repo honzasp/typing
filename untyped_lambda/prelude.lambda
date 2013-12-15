@@ -28,7 +28,7 @@ scc = \n. \s.\z. n s (s z);
 plus = \a.\b. \s.\z. a s (b s z);
 times = \a.\b. \s.\z. a (b s) z;
 power = \a.\b. \s.\z. b (times b) c1;
-power = \a.\b. a b;
+power = \a.\b. b a;
 
 prd = \a. fst (a (\p.pair(snd p)(scc (snd p))) (pair c0 c0));
 minus = \a.\b. b prd a;
