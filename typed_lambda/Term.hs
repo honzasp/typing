@@ -11,6 +11,7 @@ data Term
   | TmSucc Term
   | TmPred Term
   | TmIszero Term
+  | TmUnit
   | TmValue Value
   deriving Show
 
@@ -19,10 +20,12 @@ data Value
   | ValTrue
   | ValFalse
   | ValNat Integer
+  | ValUnit
   deriving Show
 
 data Type
   = TyArr Type Type
   | TyBool
   | TyNat
+  | TyUnit
   deriving(Show, Eq)

@@ -34,6 +34,7 @@ typeOf ctx t = case t of
     typeOf ctx t1 >>= expectTy "Pred arg must be Nat" TyNat >> return TyNat
   TmIszero t1 -> 
     typeOf ctx t1 >>= expectTy "Iszero arg must be Nat" TyNat >> return TyBool
+  TmUnit -> Right $ TyUnit
   TmValue val ->
     error "Typechecked value"
   where

@@ -45,7 +45,7 @@ appsTerm = atomicTerm `chainl1` return app where
   app t1 t2 = \ctx -> TmApp <$> t1 ctx <*> t2 ctx
 
 atomicTerm =
-  try trueTerm <|> try falseTerm <|> try zeroTerm <|>
+  try trueTerm <|> try falseTerm <|> try zeroTerm <|> try unitTerm <|>
   try succTerm <|> try predTerm <|> try iszeroTerm <|>
   try varTerm <|> try absTerm <|>
   try (between (symbol "(") (symbol ")") term)
@@ -53,6 +53,7 @@ atomicTerm =
 trueTerm = keyword "true" >> con0 TmTrue
 falseTerm = keyword "false" >> con0 TmFalse
 zeroTerm = symbol "0" >> con0 TmZero
+unitTerm = keyword "unit" >> con0 TmUnit
 
 succTerm = keyword "succ" >> con1 TmSucc term
 predTerm = keyword "pred" >> con1 TmPred term
@@ -71,9 +72,10 @@ absTerm = do
 type_ :: Parser Type
 type_ = atomicTy `chainr1` (try (symbol "->") >> return TyArr) where
 
-atomicTy = boolTy <|> natTy
+atomicTy = boolTy <|> natTy <|> unitTy
 boolTy = keyword "Bool" >> return TyBool
 natTy = keyword "Nat" >> return TyNat
+unitTy = keyword "Unit" >> return TyUnit
 
 con0 :: a -> Parser (InNameCtx a)
 con0 con = return $ \ctx -> return con
@@ -94,9 +96,10 @@ identifier = notKeyword >> ((:) <$> idStartChar <*> many idChar) <* spaces
 
 notKeyword = notFollowedBy . choice $ map (try . keyword) keywords
 keywords = 
-  [ "true", "false", "if", "then", "else"
+  [ "true", "false", "unit"
+  , "if", "then", "else"
   , "succ", "pred", "iszero"
-  , "Bool", "Nat"]
+  , "Bool", "Nat", "Unit"]
 
 idStartChar = letter
 idChar = alphaNum
