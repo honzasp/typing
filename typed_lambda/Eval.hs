@@ -42,37 +42,38 @@ shiftTerm d = mapTerm shiftVar where
   shiftVar c var = if var >= c then TmVar (var + d) else TmVar var
 
 eval :: NameCtx -> Term -> Value
-eval ctx (TmVar k)
-  | (_,NBndTermBind t) <- ctxLookup k ctx = eval ctx $ shiftTerm (k+1) t
-eval ctx (TmAbs x ty t1) = ValAbs x ty t1
-eval ctx (TmApp t1 t2)
-  | ValAbs _ _ t12 <- v1 =
-    eval ctx $ shiftTerm (-1) $ substTerm 0 (shiftTerm 1 (TmValue v2)) t12
-  where (v1,v2) = (eval ctx t1,eval ctx t2)
-eval ctx TmTrue = ValTrue
-eval ctx TmFalse = ValFalse
-eval ctx (TmIf t1 t2 t3)
-  | ValTrue <- v1  = v2
-  | ValFalse <- v1 = v3
-  where (v1,v2,v3) = (eval ctx t1,eval ctx t2,eval ctx t3)
-eval ctx TmZero = ValNat 0
-eval ctx (TmSucc t1)
-  | ValNat n <- v1 = ValNat (n+1)
-  where v1 = eval ctx t1
-eval ctx (TmPred t1)
-  | ValNat n <- v1 = ValNat (max 0 (n-1))
-  where v1 = eval ctx t1
-eval ctx (TmIszero t1)
-  | ValNat 0 <- v1 = ValTrue
-  | ValNat n <- v1 = ValFalse
-  where v1 = eval ctx t1
-eval ctx TmUnit = ValUnit
-eval ctx (TmLet x t1 t2) =
-  eval ctx $ shiftTerm (-1) $ substTerm 0 (shiftTerm 1 (TmValue v1)) t2
-  where v1 = eval ctx t1
-eval ctx (TmTuple ts) = ValTuple $ map (eval ctx) ts
-eval ctx (TmProj t1 i)
-  | ValTuple vs <- v1 = vs !! (i-1)
-  where v1 = eval ctx t1
-eval ctx (TmValue val) = val
-eval _ t = error "Evaluation got stuck"
+eval ctx t = case t of
+  TmVar k
+    | (_,NBndTermBind t) <- ctxLookup k ctx -> eval ctx $ shiftTerm (k+1) t
+  TmAbs x ty t1 -> ValAbs x ty t1
+  TmApp t1 t2
+    | ValAbs _ _ t12 <- v1 ->
+      eval ctx $ shiftTerm (-1) $ substTerm 0 (shiftTerm 1 (TmValue v2)) t12
+    where (v1,v2) = (eval ctx t1,eval ctx t2)
+  TmTrue -> ValTrue
+  TmFalse -> ValFalse
+  TmIf t1 t2 t3
+    | ValTrue <- v1  -> v2
+    | ValFalse <- v1 -> v3
+    where (v1,v2,v3) = (eval ctx t1,eval ctx t2,eval ctx t3)
+  TmZero -> ValNat 0
+  TmSucc t1
+    | ValNat n <- v1 -> ValNat (n+1)
+    where v1 = eval ctx t1
+  TmPred t1
+    | ValNat n <- v1 -> ValNat (max 0 (n-1))
+    where v1 = eval ctx t1
+  TmIszero t1
+    | ValNat 0 <- v1 -> ValTrue
+    | ValNat n <- v1 -> ValFalse
+    where v1 = eval ctx t1
+  TmUnit -> ValUnit
+  TmLet x t1 t2 ->
+    eval ctx $ shiftTerm (-1) $ substTerm 0 (shiftTerm 1 (TmValue v1)) t2
+    where v1 = eval ctx t1
+  TmTuple ts -> ValTuple $ map (eval ctx) ts
+  TmProj t1 i
+    | ValTuple vs <- v1 -> vs !! (i-1)
+    where v1 = eval ctx t1
+  TmValue val -> val
+  t -> error "Evaluation got stuck"
