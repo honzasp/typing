@@ -32,13 +32,19 @@ special0Cmd = CmdSpecial0 <$> (symbol ":" >> identifier)
 special1Cmd = CmdSpecial1 <$> (symbol ":" >> identifier) <*> term
 
 term :: Parser (InNameCtx Term)
-term = try ifTerm <|> appsTerm
+term = try ifTerm <|> try letTerm <|> appsTerm
 
 ifTerm = do
   t1 <- keyword "if" >> term
   t2 <- keyword "then" >> term
   t3 <- keyword "else" >> term
   return $ \ctx -> TmIf <$> t1 ctx <*> t2 ctx <*> t3 ctx
+
+letTerm = do
+  x <- keyword "let" >> identifier
+  t1 <- symbol "=" >> term
+  t2 <- keyword "in" >> term
+  return $ \ctx -> TmLet x <$> t1 ctx <*> t2 (ctxBind (x,NBndNameBind) ctx)
 
 appsTerm = atomicTerm `chainl1` return app where
   app :: InNameCtx Term -> InNameCtx Term -> InNameCtx Term
@@ -99,6 +105,7 @@ keywords =
   [ "true", "false", "unit"
   , "if", "then", "else"
   , "succ", "pred", "iszero"
+  , "let", "in"
   , "Bool", "Nat", "Unit"]
 
 idStartChar = letter

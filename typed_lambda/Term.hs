@@ -12,6 +12,7 @@ data Term
   | TmPred Term
   | TmIszero Term
   | TmUnit
+  | TmLet String Term Term
   | TmValue Value
   deriving Show
 

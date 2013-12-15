@@ -35,6 +35,9 @@ typeOf ctx t = case t of
   TmIszero t1 -> 
     typeOf ctx t1 >>= expectTy "Iszero arg must be Nat" TyNat >> return TyBool
   TmUnit -> Right $ TyUnit
+  TmLet _ t1 t2 -> do
+    ty1 <- typeOf ctx t1
+    typeOf (ctxBind (TBndVarBind ty1) ctx) t2
   TmValue val ->
     error "Typechecked value"
   where

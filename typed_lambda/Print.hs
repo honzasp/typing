@@ -6,12 +6,9 @@ import Term
 
 ppTerm :: NameCtx -> Term -> Doc
 ppTerm ctx t = case t of
-  TmVar idx ->
-    text $ ctxLookupName idx ctx
-  TmAbs hint ty t1 ->
-    ppAbs ctx hint ty t1
-  TmApp t1 t2 ->
-    ppTerm ctx t1 <+> ppTerm ctx t2
+  TmVar idx -> text $ ctxLookupName idx ctx
+  TmAbs hint ty t1 -> ppAbs ctx hint ty t1
+  TmApp t1 t2 -> ppTerm ctx t1 <+> ppTerm ctx t2
   TmTrue -> text "true"
   TmFalse -> text "false"
   TmIf t1 t2 t3 ->
@@ -23,6 +20,7 @@ ppTerm ctx t = case t of
   TmPred t1 -> text "pred" <+> ppTerm ctx t1
   TmIszero t1 -> text "iszero" <+> ppTerm ctx t1
   TmUnit -> text "unit"
+  TmLet hint t1 t2 -> ppLet ctx hint t1 t2
   TmValue val -> ppValue ctx val
 
 ppValue :: NameCtx -> Value -> Doc
@@ -41,6 +39,13 @@ ppAbs ctx hint ty t1 =
         text "\\" <> text name <>
         text ":" <> ppType ty <>
         text "." <> ppTerm ctx' t1
+
+ppLet :: NameCtx -> String -> Term -> Term -> Doc
+ppLet ctx hint t1 t2 =
+  let (name,ctx') = ctxBindFreshName hint NBndNameBind ctx
+  in  text "let" <+> text name <>
+      text "=" <> ppTerm ctx t1 <+>
+      text "in" <+> parens (ppTerm ctx' t2)
 
 ppType :: Type -> Doc
 ppType ty = case ty of

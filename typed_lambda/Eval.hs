@@ -9,7 +9,7 @@ mapTerm mapVar = walk 0 where
   walk :: Int -> Term -> Term
   walk c t = case t of
     TmVar k -> mapVar c k
-    TmAbs x ty t1 -> TmAbs x ty $ walk (c+1) t1
+    TmAbs x ty t1 -> TmAbs x ty (walk (c+1) t1)
     TmApp t1 t2 -> TmApp (walk c t1) (walk c t2)
     TmTrue -> TmTrue
     TmFalse -> TmFalse
@@ -19,6 +19,7 @@ mapTerm mapVar = walk 0 where
     TmPred t1 -> TmPred (walk c t1)
     TmIszero t1 -> TmIszero (walk c t1)
     TmUnit -> TmUnit
+    TmLet x t1 t2 -> TmLet x (walk c t1) (walk (c+1) t2)
     TmValue val -> TmValue (walkValue c val)
 
   walkValue :: Int -> Value -> Value
@@ -62,6 +63,9 @@ eval ctx (TmIszero t1)
   | ValNat 0 <- v1 = ValTrue
   | ValNat n <- v1 = ValFalse
   where v1 = eval ctx t1
-eval ctx (TmValue val) = val
 eval ctx TmUnit = ValUnit
+eval ctx (TmLet x t1 t2) =
+  eval ctx $ shiftTerm (-1) $ substTerm 0 (shiftTerm 1 (TmValue v1)) t2
+  where v1 = eval ctx t1
+eval ctx (TmValue val) = val
 eval _ t = error "Evaluation got stuck"
