@@ -33,7 +33,7 @@ evalCmd modCtx@(nameCtx,typeCtx) cmd = case cmd of
     let value = eval nameCtx term
     let nameCtx' = ctxBind (x,NBndTermBind term) nameCtx
     let typeCtx' = ctxBind (TBndVarBind ty) typeCtx
-    Right ((nameCtx',typeCtx'),CmdResBound x term ty)
+    Right ((nameCtx',typeCtx'),CmdResBound x value ty)
   CmdEvalTerm termInCtx -> do
     term <- termInCtx nameCtx
     ty <- typeOf typeCtx term
@@ -46,5 +46,16 @@ evalCmd modCtx@(nameCtx,typeCtx) cmd = case cmd of
     term <- termInCtx nameCtx
     case spec of
       "t" -> typeOf typeCtx term >>= Right . (modCtx,) . CmdResType
+      "a" -> assertion term
       _   -> Left $ "Undefined 1-special: " ++ show spec
   CmdEmpty -> Right (modCtx,CmdResEmpty)
+  where
+    assertion t = do
+      ty <- typeOf typeCtx t
+      case ty of 
+        TyBool -> Right ()
+        _      -> Left $ "Assertion type must be Bool"
+      case eval nameCtx t of
+        TmTrue -> Right (modCtx,CmdResEmpty)
+        TmFalse -> Left $ "Assertion failed: " ++ render (ppTerm nameCtx t)
+        other   -> error $ "Term of type Bool didn't evaluate to true or false"

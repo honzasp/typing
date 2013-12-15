@@ -14,6 +14,10 @@ mapTerm mapVar = walk 0 where
     TmTrue -> TmTrue
     TmFalse -> TmFalse
     TmIf t1 t2 t3 -> TmIf (walk c t1) (walk c t2) (walk c t3)
+    TmZero -> TmZero
+    TmSucc t1 -> TmSucc (walk c t1)
+    TmPred t1 -> TmPred (walk c t1)
+    TmIszero t1 -> TmIszero (walk c t1)
 
 substTerm :: Int -> Term -> Term -> Term
 substTerm k s = mapTerm substVar where

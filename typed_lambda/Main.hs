@@ -1,10 +1,10 @@
 {-# LANGUAGE TupleSections #-}
 module Main(main) where
 import Control.Applicative((<$>))
-import Control.Monad
 import Control.Monad.Instances()
 import System.Environment(getArgs)
-import System.IO(hFlush,stdout,putStrLn)
+import System.IO(hFlush, stdout)
+import Prelude hiding(mod)
 import Text.PrettyPrint(render)
 
 import Command
@@ -77,6 +77,8 @@ replLoop ctx = do
             putStrLn (render $ ppTermType nameCtx term ty) >> return True
           CmdResBound x term ty -> 
             putStrLn (render $ ppNameTermType nameCtx x term ty) >> return True
+          CmdResType ty ->
+            putStrLn (render $ ppType ty) >> return True
           CmdResEmpty ->
             return True
           CmdResQuit ->
