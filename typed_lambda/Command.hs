@@ -16,9 +16,10 @@ data Command
   | CmdEmpty
 
 data CmdResult
-  = CmdResShow Term Type
+  = CmdResShow Value Type
   | CmdResBound String Term Type
   | CmdResType Type
+  | CmdResDebug String
   | CmdResEmpty
   | CmdResQuit
   deriving Show
@@ -30,10 +31,9 @@ evalCmd modCtx@(nameCtx,typeCtx) cmd = case cmd of
   CmdBindTerm x termInCtx -> do
     term <- termInCtx nameCtx
     ty <- typeOf typeCtx term
-    let value = eval nameCtx term
     let nameCtx' = ctxBind (x,NBndTermBind term) nameCtx
     let typeCtx' = ctxBind (TBndVarBind ty) typeCtx
-    Right ((nameCtx',typeCtx'),CmdResBound x value ty)
+    Right ((nameCtx',typeCtx'),CmdResBound x term ty)
   CmdEvalTerm termInCtx -> do
     term <- termInCtx nameCtx
     ty <- typeOf typeCtx term
@@ -47,15 +47,20 @@ evalCmd modCtx@(nameCtx,typeCtx) cmd = case cmd of
     case spec of
       "t" -> typeOf typeCtx term >>= Right . (modCtx,) . CmdResType
       "a" -> assertion term
+      "dp" -> debugRaw term
+      "de" -> debugEval term
       _   -> Left $ "Undefined 1-special: " ++ show spec
   CmdEmpty -> Right (modCtx,CmdResEmpty)
   where
+    debugRaw = Right . (modCtx,) . CmdResDebug . show
+    debugEval = Right . (modCtx,) . CmdResDebug . show . eval nameCtx
+
     assertion t = do
       ty <- typeOf typeCtx t
       case ty of 
         TyBool -> Right ()
         _      -> Left $ "Assertion type must be Bool"
       case eval nameCtx t of
-        TmTrue -> Right (modCtx,CmdResEmpty)
-        TmFalse -> Left $ "Assertion failed: " ++ render (ppTerm nameCtx t)
-        other   -> error $ "Term of type Bool didn't evaluate to true or false"
+        ValTrue  -> Right (modCtx,CmdResEmpty)
+        ValFalse -> Left $ "Assertion failed: " ++ render (ppTerm nameCtx t)
+        other    -> error $ "Term of type Bool didn't evaluate to true or false"

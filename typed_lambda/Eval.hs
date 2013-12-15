@@ -18,6 +18,14 @@ mapTerm mapVar = walk 0 where
     TmSucc t1 -> TmSucc (walk c t1)
     TmPred t1 -> TmPred (walk c t1)
     TmIszero t1 -> TmIszero (walk c t1)
+    TmValue val -> TmValue (walkValue c val)
+
+  walkValue :: Int -> Value -> Value
+  walkValue c v = case v of
+    ValAbs x ty t1 -> ValAbs x ty $ walk (c+1) t1
+    ValTrue -> ValTrue
+    ValFalse -> ValFalse
+    ValNat n -> ValNat n
 
 substTerm :: Int -> Term -> Term -> Term
 substTerm k s = mapTerm substVar where
@@ -27,33 +35,30 @@ shiftTerm :: Int -> Term -> Term
 shiftTerm d = mapTerm shiftVar where
   shiftVar c var = if var >= c then TmVar (var + d) else TmVar var
 
-eval :: NameCtx -> Term -> Term
-eval ctx (TmApp t1 t2)
-  | TmAbs _ _ t12 <- v1 =
-    eval ctx $ shiftTerm (-1) $ substTerm 0 (shiftTerm 1 v2) t12
-  | otherwise = TmApp v1 v2
-  where (v1,v2) = (eval ctx t1,eval ctx t2)
+eval :: NameCtx -> Term -> Value
 eval ctx (TmVar k)
   | (_,NBndTermBind t) <- ctxLookup k ctx = eval ctx $ shiftTerm (k+1) t
+eval ctx (TmAbs x ty t1) = ValAbs x ty t1
+eval ctx (TmApp t1 t2)
+  | ValAbs _ _ t12 <- v1 =
+    eval ctx $ shiftTerm (-1) $ substTerm 0 (shiftTerm 1 (TmValue v2)) t12
+  where (v1,v2) = (eval ctx t1,eval ctx t2)
+eval ctx TmTrue = ValTrue
+eval ctx TmFalse = ValFalse
 eval ctx (TmIf t1 t2 t3)
-  | TmTrue <- v1  = v2
-  | TmFalse <- v1 = v3
-  | otherwise     = TmIf v1 t2 t3
+  | ValTrue <- v1  = v2
+  | ValFalse <- v1 = v3
   where (v1,v2,v3) = (eval ctx t1,eval ctx t2,eval ctx t3)
-eval ctx (TmSucc t1) = TmSucc $ eval ctx t1
+eval ctx TmZero = ValNat 0
+eval ctx (TmSucc t1)
+  | ValNat n <- v1 = ValNat (n+1)
+  where v1 = eval ctx t1
 eval ctx (TmPred t1)
-  | TmSucc nv <- v1, isNumericVal nv = nv
-  | TmZero <- v1 = TmZero
-  | otherwise    = TmPred v1
+  | ValNat n <- v1 = ValNat (max 0 (n-1))
   where v1 = eval ctx t1
 eval ctx (TmIszero t1)
-  | TmSucc nv <- v1, isNumericVal nv = TmFalse
-  | TmZero <- v1  = TmTrue
-  | otherwise     = TmIszero v1
+  | ValNat 0 <- v1 = ValTrue
+  | ValNat n <- v1 = ValFalse
   where v1 = eval ctx t1
-eval _ t = t
-
-isNumericVal :: Term -> Bool
-isNumericVal (TmSucc t) = isNumericVal t
-isNumericVal TmZero = True
-isNumericVal _      = False
+eval ctx (TmValue val) = val
+eval _ t = error "Evaluation got stuck"

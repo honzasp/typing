@@ -1,7 +1,7 @@
 module Context
-  ( Context, NameBinding(..), ModBinding(..), TypeBinding(..)
+  ( Context, NameBinding(..), TypeBinding(..)
   , InNameCtx, NameCtx, TypeCtx
-  , ctxBind, ctxLookup, ctxEmpty, ctxMap
+  , ctxBind, ctxLookup, ctxEmpty, ctxMap, ctxBindings
   , ctxBindFreshName, ctxBoundName, ctxLookupName, ctxLookupIndex
 ) where
 import Data.List (elemIndex)
@@ -20,10 +20,6 @@ type TypeCtx = Context TypeBinding
 data NameBinding
   = NBndNameBind
   | NBndTermBind Term
-  deriving Show
-
-data ModBinding
-  = MBndTermBind Type Term
   deriving Show
 
 data TypeBinding

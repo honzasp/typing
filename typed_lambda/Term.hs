@@ -1,4 +1,4 @@
-module Term(Term(..), Type(..)) where
+module Term(Term(..), Type(..), Value(..)) where
 
 data Term
   = TmVar Int
@@ -11,6 +11,14 @@ data Term
   | TmSucc Term
   | TmPred Term
   | TmIszero Term
+  | TmValue Value
+  deriving Show
+
+data Value
+  = ValAbs String Type Term
+  | ValTrue
+  | ValFalse
+  | ValNat Integer
   deriving Show
 
 data Type

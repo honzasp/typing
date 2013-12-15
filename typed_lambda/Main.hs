@@ -53,6 +53,8 @@ evalMod ctx (path,txt) = do
       Right (ctx',res) -> do
         case res of
           CmdResQuit -> return $ Left "Module tried to quit"
+          CmdResDebug msg ->
+            putStrLn ("[debug] " ++ msg) >> return (Right ctx')
           _ -> return $ Right ctx'
 
 replLoop :: ModCtx -> IO ()
@@ -73,12 +75,14 @@ replLoop ctx = do
       Left err -> putStrLn err >> return (Just ctx)
       Right (ctx',res) -> do
         continue <- case res of
-          CmdResShow term ty -> 
-            putStrLn (render $ ppTermType nameCtx term ty) >> return True
+          CmdResShow value ty -> 
+            putStrLn (render $ ppValueType nameCtx value ty) >> return True
           CmdResBound x term ty -> 
             putStrLn (render $ ppNameTermType nameCtx x term ty) >> return True
           CmdResType ty ->
             putStrLn (render $ ppType ty) >> return True
+          CmdResDebug msg ->
+            putStrLn ("[debug] " ++ msg) >> return True
           CmdResEmpty ->
             return True
           CmdResQuit ->
