@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 module Parser(InNameCtx, parseMod, parseCommand) where
-import Control.Applicative((<*), (<*>), (<$>))
+import Control.Applicative((<*), (*>), (<*>), (<$>))
 import Text.Parsec
 
 import Command
@@ -10,12 +10,12 @@ import Term
 type Parser = Parsec String ()
 
 parseMod :: String -> Either String [Command]
-parseMod txt = case parse (spaces >> modul <* eof) "" txt of
+parseMod txt = case parse (spaces *> modul <* eof) "" txt of
   Left err -> Left $ show err
   Right cmdsInNameCtx -> Right cmdsInNameCtx
 
 parseCommand :: String -> Either String Command
-parseCommand txt = case parse (spaces >> command <* eof) "" txt of
+parseCommand txt = case parse (spaces *> command <* eof) "" txt of
   Left err -> Left $ show err
   Right cmdInNameCtx -> Right cmdInNameCtx
 
@@ -28,8 +28,8 @@ command =
   (CmdEvalTerm <$> try term) <|> return CmdEmpty
 
 bindTermCmd = CmdBindTerm <$> (identifier <* symbol "=") <*> term
-special0Cmd = CmdSpecial0 <$> (symbol ":" >> identifier)
-special1Cmd = CmdSpecial1 <$> (symbol ":" >> identifier) <*> term
+special0Cmd = CmdSpecial0 <$> (symbol ":" *> identifier)
+special1Cmd = CmdSpecial1 <$> (symbol ":" *> identifier) <*> term
 
 term :: Parser (InNameCtx Term)
 term = try ifTerm <|> try letTerm <|> appsTerm
@@ -46,13 +46,21 @@ letTerm = do
   t2 <- keyword "in" >> term
   return $ \ctx -> TmLet x <$> t1 ctx <*> t2 (ctxBind (x,NBndNameBind) ctx)
 
-appsTerm = atomicTerm `chainl1` return app where
+appsTerm = projsTerm `chainl1` return app where
   app :: InNameCtx Term -> InNameCtx Term -> InNameCtx Term
   app t1 t2 = \ctx -> TmApp <$> t1 ctx <*> t2 ctx
+
+projsTerm = do
+  t1 <- atomicTerm
+  is <- many (symbol "." *> proj <* spaces)
+  return $ \ctx -> foldProjs is <$> t1 ctx
+  where proj = read <$> many1 digit
+        foldProjs is term = foldl TmProj term is
 
 atomicTerm =
   try trueTerm <|> try falseTerm <|> try zeroTerm <|> try unitTerm <|>
   try succTerm <|> try predTerm <|> try iszeroTerm <|>
+  try tupleTerm <|>
   try varTerm <|> try absTerm <|>
   try (between (symbol "(") (symbol ")") term)
 
@@ -64,6 +72,10 @@ unitTerm = keyword "unit" >> con0 TmUnit
 succTerm = keyword "succ" >> con1 TmSucc term
 predTerm = keyword "pred" >> con1 TmPred term
 iszeroTerm = keyword "iszero" >> con1 TmIszero term
+
+tupleTerm = wrapTuple <$> members
+  where members = between (symbol "{") (symbol "}") (term `sepBy` symbol ",")
+        wrapTuple ts ctx = TmTuple <$> mapM ($ ctx) ts
 
 varTerm = do
   x <- identifier

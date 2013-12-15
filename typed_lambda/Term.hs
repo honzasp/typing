@@ -13,6 +13,8 @@ data Term
   | TmIszero Term
   | TmUnit
   | TmLet String Term Term
+  | TmTuple [Term]
+  | TmProj Term Int
   | TmValue Value
   deriving Show
 
@@ -22,6 +24,7 @@ data Value
   | ValFalse
   | ValNat Integer
   | ValUnit
+  | ValTuple [Value]
   deriving Show
 
 data Type
@@ -29,4 +32,5 @@ data Type
   | TyBool
   | TyNat
   | TyUnit
+  | TyTuple [Type]
   deriving(Show, Eq)

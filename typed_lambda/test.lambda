@@ -50,3 +50,6 @@ t9 = (\f:Unit->Unit. f(f(unit))) (\x:Unit. t8);
 :a let x=true in x;
 :a (\x:Bool.let y=not x in not y) true;
 :a let x=true in let y=not x in not y;
+
+:a {0,true}.2;
+:a {succ 0,false,\x:Bool.not x}.3 false;

@@ -29,15 +29,29 @@ typeOf ctx t = case t of
       _      -> Left $ "If condition not a bool"
   TmZero -> Right $ TyNat
   TmSucc t1 ->
-    typeOf ctx t1 >>= expectTy "Succ arg must be Nat" TyNat >> return TyNat
+    typeOf ctx t1 >>=
+      expectTy "succ must be applied to Nat" TyNat >>
+      return TyNat
   TmPred t1 -> do
-    typeOf ctx t1 >>= expectTy "Pred arg must be Nat" TyNat >> return TyNat
+    typeOf ctx t1 >>=
+      expectTy "pred must be applied to Nat" TyNat >>
+      return TyNat
   TmIszero t1 -> 
-    typeOf ctx t1 >>= expectTy "Iszero arg must be Nat" TyNat >> return TyBool
+    typeOf ctx t1 >>=
+      expectTy "iszero must be applied to Nat" TyNat >>
+      return TyBool
   TmUnit -> Right $ TyUnit
   TmLet _ t1 t2 -> do
     ty1 <- typeOf ctx t1
     typeOf (ctxBind (TBndVarBind ty1) ctx) t2
+  TmTuple ts -> TyTuple <$> mapM (typeOf ctx) ts
+  TmProj t1 i -> do
+    ty1 <- typeOf ctx t1
+    case ty1 of
+      TyTuple tys | i <= 0 -> Left $ "Projection must be positive"
+      TyTuple tys | length tys >= i -> Right $ tys !! (i-1)
+      TyTuple tys -> Left $ "Tuple too small"
+      _           -> Left $ "Only tuple can be projected"
   TmValue val ->
     error "Typechecked value"
   where
