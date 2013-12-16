@@ -30,11 +30,12 @@ bindTermCmd = CmdBindTerm <$> (identifier <* symbol "=") <*> try term
 evalTermCmd = CmdEvalTerm <$> try term
 
 specialCmd = symbol ":" >> CmdSpecial <$> choice (map try cmds) 
-  where cmds = [quitCmd, typeCmd, assertCmd, dbgParsedCmd]
+  where cmds = [quitCmd, typeCmd, assertCmd, ppCmd, dbgParsedCmd]
 
 quitCmd = keyword "q" >> return CmdSpecQuit
 typeCmd = keyword "t" >> CmdSpecType <$> term
 assertCmd = keyword "a" >> CmdSpecAssert <$> term
+ppCmd = keyword "pp" >> CmdSpecPrettyPrint <$> term
 dbgParsedCmd = keyword "_p" >> CmdSpecDbgParsed <$> term
 
 term :: Parser (InNameCtx Term)

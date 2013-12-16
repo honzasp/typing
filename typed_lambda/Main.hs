@@ -77,6 +77,8 @@ replLoop ctx = do
         continue <- case res of
           CmdResShow value ty -> 
             putStrLn (render $ ppValueType nameCtx value ty) >> return True
+          CmdResShowTerm t ->
+            putStrLn (render $ ppTerm nameCtx t) >> return True
           CmdResBound x term ty -> 
             putStrLn (render $ ppNameTermType nameCtx x term ty) >> return True
           CmdResType ty ->

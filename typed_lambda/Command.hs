@@ -20,10 +20,12 @@ data CmdSpecial
   = CmdSpecQuit
   | CmdSpecType (InNameCtx Term)
   | CmdSpecAssert (InNameCtx Term)
+  | CmdSpecPrettyPrint (InNameCtx Term)
   | CmdSpecDbgParsed (InNameCtx Term)
 
 data CmdResult
   = CmdResShow Value Type
+  | CmdResShowTerm Term
   | CmdResBound String Term Type
   | CmdResType Type
   | CmdResDebug String
@@ -53,6 +55,8 @@ evalCmd modCtx@(nameCtx,typeCtx) cmd = case cmd of
       typeOf typeCtx >>=
       Right . (modCtx,) . CmdResType
     CmdSpecAssert tInCtx -> assertion tInCtx
+    CmdSpecPrettyPrint tInCtx ->
+      (modCtx,) . CmdResShowTerm <$> tInCtx nameCtx
     CmdSpecDbgParsed tInCtx ->
       (modCtx,) . CmdResDebug . show <$> tInCtx nameCtx
   where
