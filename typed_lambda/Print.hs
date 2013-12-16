@@ -8,7 +8,7 @@ ppTerm :: NameCtx -> Term -> Doc
 ppTerm ctx t = case t of
   TmVar idx -> text $ ctxLookupName idx ctx
   TmAbs hint ty t1 -> ppAbs ctx hint ty t1
-  TmApp t1 t2 -> ppTerm ctx t1 <+> ppTerm ctx t2
+  TmApp t1 t2 -> parens (ppTerm ctx t1) <+> ppTerm ctx t2
   TmTrue -> text "true"
   TmFalse -> text "false"
   TmIf t1 t2 t3 ->
