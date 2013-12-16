@@ -81,3 +81,11 @@ factorial = fix \factorial:Nat->Nat.
 :a equal (times 9 2) 18;
 
 :a equal (factorial 5) 120;
+
+mod = \a:Nat.\b:Nat.
+  let go = (fix \go:Nat->Nat->Nat->Nat.
+    \i:Nat.\m:Nat.\n:Nat.
+      if iszero i then m
+      else if iszero n then go (pred i) 0 (pred b)
+      else go (pred i) (succ m) (pred n))
+  in go a 0 (pred b);

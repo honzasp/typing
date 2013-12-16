@@ -1,5 +1,8 @@
 {-# LANGUAGE TupleSections #-}
-module Command(Command(..), CmdResult(..), ModCtx, evalCmd) where
+module Command
+  ( Command(..), CmdSpecial(..), CmdResult(..), ModCtx, evalCmd
+) where
+import Control.Applicative((<$>))
 import Text.PrettyPrint(render)
 
 import Context
@@ -11,9 +14,13 @@ import Typing
 data Command
   = CmdBindTerm String (InNameCtx Term)
   | CmdEvalTerm (InNameCtx Term)
-  | CmdSpecial0 String
-  | CmdSpecial1 String (InNameCtx Term)
-  | CmdEmpty
+  | CmdSpecial CmdSpecial
+
+data CmdSpecial
+  = CmdSpecQuit
+  | CmdSpecType (InNameCtx Term)
+  | CmdSpecAssert (InNameCtx Term)
+  | CmdSpecDbgParsed (InNameCtx Term)
 
 data CmdResult
   = CmdResShow Value Type
@@ -39,23 +46,18 @@ evalCmd modCtx@(nameCtx,typeCtx) cmd = case cmd of
     ty <- typeOf typeCtx term
     let value = eval nameCtx term
     Right (modCtx,CmdResShow value ty)
-  CmdSpecial0 spec -> case spec of
-    "q" -> Right (modCtx,CmdResQuit)
-    _   -> Left $ "Undefined 0-special: " ++ show spec
-  CmdSpecial1 spec termInCtx -> do
-    term <- termInCtx nameCtx
-    case spec of
-      "t" -> typeOf typeCtx term >>= Right . (modCtx,) . CmdResType
-      "a" -> assertion term
-      "dp" -> debugRaw term
-      "de" -> debugEval term
-      _   -> Left $ "Undefined 1-special: " ++ show spec
-  CmdEmpty -> Right (modCtx,CmdResEmpty)
+  CmdSpecial spec -> case spec of
+    CmdSpecQuit -> Right (modCtx,CmdResQuit)
+    CmdSpecType tInCtx ->
+      tInCtx nameCtx >>=
+      typeOf typeCtx >>=
+      Right . (modCtx,) . CmdResType
+    CmdSpecAssert tInCtx -> assertion tInCtx
+    CmdSpecDbgParsed tInCtx ->
+      (modCtx,) . CmdResDebug . show <$> tInCtx nameCtx
   where
-    debugRaw = Right . (modCtx,) . CmdResDebug . show
-    debugEval = Right . (modCtx,) . CmdResDebug . show . eval nameCtx
-
-    assertion t = do
+    assertion tInCtx = do
+      t <- tInCtx nameCtx
       ty <- typeOf typeCtx t
       case ty of 
         TyBool -> Right ()

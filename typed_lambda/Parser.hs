@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 module Parser(InNameCtx, parseMod, parseCommand) where
 import Control.Applicative((<*), (*>), (<*>), (<$>))
+import Data.Maybe(catMaybes)
 import Text.Parsec
 
 import Command
@@ -20,77 +21,85 @@ parseCommand txt = case parse (spaces *> command <* eof) "" txt of
   Right cmdInNameCtx -> Right cmdInNameCtx
 
 modul :: Parser [Command]
-modul = command `sepBy` symbol ";"
+modul = catMaybes <$> optionMaybe command `sepBy` symbol ";"
 
 command :: Parser Command
-command =
-  try bindTermCmd <|> try special1Cmd <|> try special0Cmd <|>
-  (CmdEvalTerm <$> try term) <|> return CmdEmpty
+command = bindTermCmd <|> specialCmd <|> evalTermCmd
 
-bindTermCmd = CmdBindTerm <$> (identifier <* symbol "=") <*> term
-special0Cmd = CmdSpecial0 <$> (symbol ":" *> identifier)
-special1Cmd = CmdSpecial1 <$> (symbol ":" *> identifier) <*> term
+bindTermCmd = CmdBindTerm <$> (identifier <* symbol "=") <*> try term
+evalTermCmd = CmdEvalTerm <$> try term
+
+specialCmd = symbol ":" >> CmdSpecial <$> choice (map try cmds) 
+  where cmds = [quitCmd, typeCmd, assertCmd, dbgParsedCmd]
+
+quitCmd = keyword "q" >> return CmdSpecQuit
+typeCmd = keyword "t" >> CmdSpecType <$> term
+assertCmd = keyword "a" >> CmdSpecAssert <$> term
+dbgParsedCmd = keyword "_p" >> CmdSpecDbgParsed <$> term
 
 term :: Parser (InNameCtx Term)
-term = try ifTerm <|> try letTerm <|> appsTerm
+term = term4
+
+term4 = letTerm <|> ifTerm <|> fixTerm <|> absTerm <|> term3
+term3 = appsTerm
+term2 = succTerm <|> predTerm <|> iszeroTerm <|> term1
+term1 = projsTerm
+term0 = trueTerm <|> falseTerm <|> unitTerm <|>
+  natTerm <|> varTerm <|> tupleTerm <|>
+  between (symbol "(") (symbol ")") term
 
 ifTerm = do
-  t1 <- keyword "if" >> term
-  t2 <- keyword "then" >> term
-  t3 <- keyword "else" >> term
+  t1 <- keyword "if" >> term4
+  t2 <- keyword "then" >> term4
+  t3 <- keyword "else" >> term4
   return $ \ctx -> TmIf <$> t1 ctx <*> t2 ctx <*> t3 ctx
 
 letTerm = do
   x <- keyword "let" >> identifier
-  t1 <- symbol "=" >> term
-  t2 <- keyword "in" >> term
+  t1 <- symbol "=" >> term4
+  t2 <- keyword "in" >> term4
   return $ \ctx -> TmLet x <$> t1 ctx <*> t2 (ctxBind (x,NBndNameBind) ctx)
 
-appsTerm = projsTerm `chainl1` return app where
-  app :: InNameCtx Term -> InNameCtx Term -> InNameCtx Term
-  app t1 t2 = \ctx -> TmApp <$> t1 ctx <*> t2 ctx
+absTerm = do
+  x <- symbol "\\" >> identifier
+  ty <- symbol ":" >> type_
+  t <- symbol "." >> term4
+  return $ \ctx -> TmAbs x ty <$> t (ctxBind (x,NBndNameBind) ctx)
+
+fixTerm = keyword "fix" >> con1 TmFix <$> term4
+
+appsTerm = do
+  t1 <- term2
+  t2s <- many $ try term1
+  return $ \ctx -> foldApps <$> t1 ctx <*> mapM ($ ctx) t2s
+  where foldApps f ts = foldl TmApp f ts
 
 projsTerm = do
-  t1 <- atomicTerm
-  is <- many (symbol "." *> proj)
+  t1 <- term0
+  is <- many $ try (symbol "." *> proj)
   return $ \ctx -> foldProjs is <$> t1 ctx
   where proj = fromIntegral <$> natural
         foldProjs is term = foldl TmProj term is
-
-atomicTerm =
-  try trueTerm <|> try falseTerm  <|> try unitTerm <|>
-  try succTerm <|> try predTerm <|> try iszeroTerm <|> try fixTerm <|>
-  try natTerm <|>
-  try tupleTerm <|>
-  try varTerm <|> try absTerm <|>
-  try (between (symbol "(") (symbol ")") term)
 
 trueTerm = keyword "true" >> con0 TmTrue
 falseTerm = keyword "false" >> con0 TmFalse
 unitTerm = keyword "unit" >> con0 TmUnit
 
-succTerm = keyword "succ" >> con1 TmSucc <$> atomicTerm
-predTerm = keyword "pred" >> con1 TmPred <$> atomicTerm
-iszeroTerm = keyword "iszero" >> con1 TmIszero <$> atomicTerm
-fixTerm = keyword "fix" >> con1 TmFix <$> atomicTerm
+succTerm = keyword "succ" >> con1 TmSucc <$> term1
+predTerm = keyword "pred" >> con1 TmPred <$> term1
+iszeroTerm = keyword "iszero" >> con1 TmIszero <$> term1
 
 natTerm = do
    n <- natural
    return $ \ctx -> return $ TmNat n
 
 tupleTerm = wrapTuple <$> members
-  where members = between (symbol "{") (symbol "}") (term `sepBy` symbol ",")
+  where members = between (symbol "{") (symbol "}") (term `sepBy` try (symbol ","))
         wrapTuple ts ctx = TmTuple <$> mapM ($ ctx) ts
 
 varTerm = do
   x <- identifier
   return $ \ctx -> TmVar <$> ctxLookupIndex x ctx
-
-absTerm = do
-  x <- symbol "\\" >> identifier
-  ty <- symbol ":" >> type_
-  t <- symbol "." >> term
-  return $ \ctx -> TmAbs x ty <$> t (ctxBind (x,NBndNameBind) ctx)
 
 type_ :: Parser Type
 type_ = atomicTy `chainr1` (try (symbol "->") >> return TyArr) where
@@ -110,14 +119,14 @@ natural :: Parser Integer
 natural = read <$> many1 digit <* spaces
 
 keyword :: String -> Parser ()
-keyword kw = string kw >> notFollowedBy idChar >> spaces
+keyword kw = try $ string kw >> notFollowedBy idChar >> spaces
 
 symbol :: String -> Parser ()
 symbol s = string s >> spaces
 
 identifier :: Parser String
-identifier = notKeyword >> ((:) <$> idStartChar <*> many idChar) <* spaces
-  where notKeyword = notFollowedBy . choice $ map (try . keyword) keywords
+identifier = notFollowedBy keyword >> ((:) <$> idStartChar <*> many idChar) <* spaces
+  where keyword = choice $ map (try . string) keywords
         keywords = 
           [ "true", "false", "unit"
           , "if", "then", "else"
