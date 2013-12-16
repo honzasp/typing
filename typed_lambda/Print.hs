@@ -15,7 +15,7 @@ ppTerm ctx t = case t of
     text "if" <+> ppTerm ctx t1 <+>
     text "then" <+> ppTerm ctx t2 <+>
     text "else" <+> ppTerm ctx t3
-  TmZero -> text "0"
+  TmNat n -> text (show n)
   TmSucc t1 -> text "succ" <+> ppTerm ctx t1
   TmPred t1 -> text "pred" <+> ppTerm ctx t1
   TmIszero t1 -> text "iszero" <+> ppTerm ctx t1

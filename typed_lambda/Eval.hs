@@ -14,7 +14,7 @@ mapTerm mapVar = walk 0 where
     TmTrue -> TmTrue
     TmFalse -> TmFalse
     TmIf t1 t2 t3 -> TmIf (walk c t1) (walk c t2) (walk c t3)
-    TmZero -> TmZero
+    TmNat n -> TmNat n
     TmSucc t1 -> TmSucc (walk c t1)
     TmPred t1 -> TmPred (walk c t1)
     TmIszero t1 -> TmIszero (walk c t1)
@@ -56,7 +56,7 @@ eval ctx t = case t of
     | ValTrue <- v1  -> v2
     | ValFalse <- v1 -> v3
     where (v1,v2,v3) = (eval ctx t1,eval ctx t2,eval ctx t3)
-  TmZero -> ValNat 0
+  TmNat n -> ValNat n
   TmSucc t1
     | ValNat n <- v1 -> ValNat (n+1)
     where v1 = eval ctx t1

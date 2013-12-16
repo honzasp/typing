@@ -52,27 +52,31 @@ appsTerm = projsTerm `chainl1` return app where
 
 projsTerm = do
   t1 <- atomicTerm
-  is <- many (symbol "." *> proj <* spaces)
+  is <- many (symbol "." *> proj)
   return $ \ctx -> foldProjs is <$> t1 ctx
-  where proj = read <$> many1 digit
+  where proj = fromIntegral <$> natural
         foldProjs is term = foldl TmProj term is
 
 atomicTerm =
-  try trueTerm <|> try falseTerm <|> try zeroTerm <|> try unitTerm <|>
+  try trueTerm <|> try falseTerm  <|> try unitTerm <|>
   try succTerm <|> try predTerm <|> try iszeroTerm <|> try fixTerm <|>
+  try natTerm <|>
   try tupleTerm <|>
   try varTerm <|> try absTerm <|>
   try (between (symbol "(") (symbol ")") term)
 
 trueTerm = keyword "true" >> con0 TmTrue
 falseTerm = keyword "false" >> con0 TmFalse
-zeroTerm = symbol "0" >> con0 TmZero
 unitTerm = keyword "unit" >> con0 TmUnit
 
-succTerm = keyword "succ" >> con1 TmSucc term
-predTerm = keyword "pred" >> con1 TmPred term
-iszeroTerm = keyword "iszero" >> con1 TmIszero term
-fixTerm = keyword "fix" >> con1 TmFix term
+succTerm = keyword "succ" >> con1 TmSucc <$> atomicTerm
+predTerm = keyword "pred" >> con1 TmPred <$> atomicTerm
+iszeroTerm = keyword "iszero" >> con1 TmIszero <$> atomicTerm
+fixTerm = keyword "fix" >> con1 TmFix <$> atomicTerm
+
+natTerm = do
+   n <- natural
+   return $ \ctx -> return $ TmNat n
 
 tupleTerm = wrapTuple <$> members
   where members = between (symbol "{") (symbol "}") (term `sepBy` symbol ",")
@@ -99,10 +103,11 @@ unitTy = keyword "Unit" >> return TyUnit
 con0 :: a -> Parser (InNameCtx a)
 con0 con = return $ \ctx -> return con
 
-con1 :: (a -> b) -> Parser (InNameCtx a) -> Parser (InNameCtx b)
-con1 con p = do
-  pInCtx <- p
-  return $ \ctx -> con <$> pInCtx ctx
+con1 :: (a -> b) -> InNameCtx a -> InNameCtx b
+con1 f inCtxA = \ctx -> f <$> inCtxA ctx
+
+natural :: Parser Integer
+natural = read <$> many1 digit <* spaces
 
 keyword :: String -> Parser ()
 keyword kw = string kw >> notFollowedBy idChar >> spaces
@@ -112,15 +117,14 @@ symbol s = string s >> spaces
 
 identifier :: Parser String
 identifier = notKeyword >> ((:) <$> idStartChar <*> many idChar) <* spaces
-
-notKeyword = notFollowedBy . choice $ map (try . keyword) keywords
-keywords = 
-  [ "true", "false", "unit"
-  , "if", "then", "else"
-  , "succ", "pred", "iszero"
-  , "let", "in"
-  , "fix"
-  , "Bool", "Nat", "Unit"]
+  where notKeyword = notFollowedBy . choice $ map (try . keyword) keywords
+        keywords = 
+          [ "true", "false", "unit"
+          , "if", "then", "else"
+          , "succ", "pred", "iszero"
+          , "let", "in"
+          , "fix"
+          , "Bool", "Nat", "Unit"]
 
 idStartChar = letter
 idChar = alphaNum

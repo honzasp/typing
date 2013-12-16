@@ -27,7 +27,7 @@ typeOf ctx t = case t of
       TyBool | ty2 == ty3 -> Right $ ty2
       TyBool -> Left $ "If arms do not match"
       _      -> Left $ "If condition not a bool"
-  TmZero -> Right $ TyNat
+  TmNat n -> Right $ TyNat
   TmSucc t1 ->
     typeOf ctx t1 >>=
       expectTy "succ must be applied to Nat" TyNat >>

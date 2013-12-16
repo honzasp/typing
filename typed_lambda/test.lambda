@@ -54,8 +54,30 @@ t9 = (\f:Unit->Unit. f(f(unit))) (\x:Unit. t8);
 :a {0,true}.2;
 :a {succ 0,false,\x:Bool.not x}.3 false;
 
+:a iszero 0;
+:a iszero (pred 1);
+:a iszero (pred (pred (pred 3)));
+
 equal = fix \equal:Nat->Nat->Bool.
   \a:Nat.\b:Nat. 
     if iszero a then iszero b 
     else if iszero b then false
     else equal (pred a) (pred b);
+
+plus = fix \plus:Nat->Nat->Nat.
+  \a:Nat.\b:Nat. if iszero a then b else succ (plus (pred a) b);
+times = fix \times:Nat->Nat->Nat.
+  \a:Nat.\b:Nat. if iszero a then 0 else plus b (times (pred a) b);
+factorial = fix \factorial:Nat->Nat.
+  \n:Nat. if iszero n then 1 else times n (factorial (pred n));
+
+:a equal 4 4;
+:a not (equal 5 3);
+
+:a equal (plus 3 4) 7;
+:a equal (plus 10 2) 12;
+
+:a equal (times 5 7) 35;
+:a equal (times 9 2) 18;
+
+:a equal (factorial 5) 120;

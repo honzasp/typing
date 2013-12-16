@@ -7,7 +7,7 @@ data Term
   | TmTrue
   | TmFalse
   | TmIf Term Term Term
-  | TmZero
+  | TmNat Integer
   | TmSucc Term
   | TmPred Term
   | TmIszero Term
