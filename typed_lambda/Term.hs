@@ -15,6 +15,7 @@ data Term
   | TmLet String Term Term
   | TmTuple [Term]
   | TmProj Term Int
+  | TmFix Term
   | TmValue Value
   deriving Show
 

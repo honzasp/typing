@@ -59,7 +59,7 @@ projsTerm = do
 
 atomicTerm =
   try trueTerm <|> try falseTerm <|> try zeroTerm <|> try unitTerm <|>
-  try succTerm <|> try predTerm <|> try iszeroTerm <|>
+  try succTerm <|> try predTerm <|> try iszeroTerm <|> try fixTerm <|>
   try tupleTerm <|>
   try varTerm <|> try absTerm <|>
   try (between (symbol "(") (symbol ")") term)
@@ -72,6 +72,7 @@ unitTerm = keyword "unit" >> con0 TmUnit
 succTerm = keyword "succ" >> con1 TmSucc term
 predTerm = keyword "pred" >> con1 TmPred term
 iszeroTerm = keyword "iszero" >> con1 TmIszero term
+fixTerm = keyword "fix" >> con1 TmFix term
 
 tupleTerm = wrapTuple <$> members
   where members = between (symbol "{") (symbol "}") (term `sepBy` symbol ",")
@@ -118,6 +119,7 @@ keywords =
   , "if", "then", "else"
   , "succ", "pred", "iszero"
   , "let", "in"
+  , "fix"
   , "Bool", "Nat", "Unit"]
 
 idStartChar = letter

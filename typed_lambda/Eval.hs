@@ -1,4 +1,4 @@
-module Eval(eval, shiftTerm) where
+module Eval(eval) where
 import Control.Monad.Instances()
 
 import Context
@@ -22,6 +22,7 @@ mapTerm mapVar = walk 0 where
     TmLet x t1 t2 -> TmLet x (walk c t1) (walk (c+1) t2)
     TmTuple ts -> TmTuple (map (walk c) ts)
     TmProj t1 i -> TmProj (walk c t1) i
+    TmFix t1 -> TmFix (walk c t1)
     TmValue val -> TmValue (walkValue c val)
 
   walkValue :: Int -> Value -> Value
@@ -47,8 +48,7 @@ eval ctx t = case t of
     | (_,NBndTermBind t) <- ctxLookup k ctx -> eval ctx $ shiftTerm (k+1) t
   TmAbs x ty t1 -> ValAbs x ty t1
   TmApp t1 t2
-    | ValAbs _ _ t12 <- v1 ->
-      eval ctx $ shiftTerm (-1) $ substTerm 0 (shiftTerm 1 (TmValue v2)) t12
+    | ValAbs _ _ t12 <- v1 -> eval ctx $ apply (TmValue v2) t12
     where (v1,v2) = (eval ctx t1,eval ctx t2)
   TmTrue -> ValTrue
   TmFalse -> ValFalse
@@ -68,12 +68,15 @@ eval ctx t = case t of
     | ValNat n <- v1 -> ValFalse
     where v1 = eval ctx t1
   TmUnit -> ValUnit
-  TmLet x t1 t2 ->
-    eval ctx $ shiftTerm (-1) $ substTerm 0 (shiftTerm 1 (TmValue v1)) t2
+  TmLet x t1 t2 -> eval ctx $ apply (TmValue v1) t2
     where v1 = eval ctx t1
   TmTuple ts -> ValTuple $ map (eval ctx) ts
   TmProj t1 i
     | ValTuple vs <- v1 -> vs !! (i-1)
     where v1 = eval ctx t1
+  TmFix t1
+    | ValAbs _ _ t2 <- v1 -> eval ctx $ apply t t2
+    where v1 = eval ctx t1
   TmValue val -> val
   t -> error "Evaluation got stuck"
+  where apply arg body = shiftTerm (-1) $ substTerm 0 (shiftTerm 1 arg) body

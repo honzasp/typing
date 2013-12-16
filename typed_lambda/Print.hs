@@ -23,6 +23,7 @@ ppTerm ctx t = case t of
   TmLet hint t1 t2 -> ppLet ctx hint t1 t2
   TmTuple ts -> braces . hcat . punctuate (text ",") . map (ppTerm ctx) $ ts
   TmProj t j -> parens (ppTerm ctx t) <> text "." <> text (show j)
+  TmFix t1 -> text "fix" <+> parens (ppTerm ctx t1)
   TmValue val -> ppValue ctx val
 
 ppValue :: NameCtx -> Value -> Doc

@@ -53,3 +53,9 @@ t9 = (\f:Unit->Unit. f(f(unit))) (\x:Unit. t8);
 
 :a {0,true}.2;
 :a {succ 0,false,\x:Bool.not x}.3 false;
+
+equal = fix \equal:Nat->Nat->Bool.
+  \a:Nat.\b:Nat. 
+    if iszero a then iszero b 
+    else if iszero b then false
+    else equal (pred a) (pred b);

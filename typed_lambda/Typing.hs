@@ -52,6 +52,12 @@ typeOf ctx t = case t of
       TyTuple tys | length tys >= i -> Right $ tys !! (i-1)
       TyTuple tys -> Left $ "Tuple too small"
       _           -> Left $ "Only tuple can be projected"
+  TmFix t1 -> do
+    ty1 <- typeOf ctx t1
+    case ty1 of
+      TyArr ty11 ty12 | ty11 == ty12 -> Right ty11
+      TyArr _ _ -> Left $ "The function given to fix must be T -> T for some T"
+      _         -> Left $ "The argument to fix must be a function"
   TmValue val ->
     error "Typechecked value"
   where
