@@ -1,4 +1,7 @@
-pub struct Term(Span, TermE);
+pub struct Term {
+  span: Span,
+  t: TermE,
+}
 
 pub enum TermE {
   TmVar(uint),
@@ -12,6 +15,7 @@ pub enum TermE {
   TmSucc(~Term),
   TmPred(~Term),
   TmIszero(~Term),
+  TmFix(~Term),
   TmGlobal(uint),
 }
 
@@ -20,6 +24,7 @@ pub enum Value<'t> {
   ValBool(bool),
   ValNat(uint),
   ValLambda(~[Value<'t>], &'t Term),
+  ValFix(~[Value<'t>], &'t Term),
 }
 
 #[deriving(Eq, Clone)]

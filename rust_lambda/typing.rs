@@ -15,7 +15,7 @@ pub fn typecheck(ctx: &GlobalCtx, term: &Term) -> Result<Type, TypeErr> {
 fn type_of(ctx: &GlobalCtx, stack: &List<Type>, term: &Term) 
   -> Result<Type, TypeErr> 
 {
-  let &Term(t_span, ref t) = term;
+  let &Term { span: t_span, t: ref t } = term;
   match *t {
     TmVar(k) =>
       Ok((*stack.index(k)).clone()),
@@ -23,7 +23,7 @@ fn type_of(ctx: &GlobalCtx, stack: &List<Type>, term: &Term)
       type_of(ctx, stack, *t1).and_then(|ty1| {
       type_of(ctx, stack, *t2).and_then(|ty2| {
         match ty1 {
-          TyArr(ref ty11, ref ty12) if &**ty11 == &ty2 => Ok((**ty12).clone()),
+          TyArr(ref ty11, ref ty12) if **ty11 == ty2 => Ok((**ty12).clone()),
           TyArr(_, _) => type_err(t_span, "Domain type mismatch"),
           _ => type_err(t_span, "Expected arrow type"),
         }
@@ -73,6 +73,15 @@ fn type_of(ctx: &GlobalCtx, stack: &List<Type>, term: &Term)
       expect_type(ctx, stack, &**t1, TyNat, 
         | | type_err(t_span, "iszero must be applied to Nat"))
         .and(Ok(TyBool)),
+    TmFix(ref t1) => {
+      type_of(ctx, stack, *t1).and_then(|ty1| {
+        match ty1 {
+          TyArr(ref ty11, ref ty12) if ty11 == ty12 => Ok((**ty11).clone()),
+          TyArr(_, _) => type_err(t_span, "fix function must be T -> T for some T"),
+          _ => type_err(t_span, "fix must be applied to a function"),
+        }
+      })
+    },
     TmGlobal(k) =>
       Ok(ctx.type_index(k)),
   }

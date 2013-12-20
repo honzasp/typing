@@ -7,20 +7,23 @@ use typing::*;
 
 mod context;
 mod eval;
+mod lexer;
 mod list;
 mod syntax;
 mod typing;
 
 fn main() {
   fn s(t: TermE) -> Term {
-    Term(Span { from: (0,0), to: (0,0) }, t)
+    Term { span: Span { from: (0,0), to: (0,0) }, t: t }
   }
 
-  let prog = 
-    ~s(TmLet(~"and", 
-      ~s(TmAbs(~"x", ~TyBool, ~s(TmAbs(~"y", ~TyBool, 
-        ~s(TmIf(~s(TmVar(1)), ~s(TmVar(0)), ~s(TmFalse))))))),
-      ~s(TmApp(~s(TmApp(~s(TmVar(0)), ~s(TmTrue))), ~s(TmFalse)))));
+  let body = ~s(TmIf(~s(TmIszero(~s(TmVar(1)))),
+      ~s(TmVar(0)),
+      ~s(TmSucc(~s(TmApp(~s(TmApp(~s(TmVar(2)), ~s(TmPred(~s(TmVar(1)))))), ~s(TmVar(1))))))));
+  let add_def = ~s(TmFix(~s(TmAbs(~"add", ~TyArr(~TyNat, ~TyArr(~TyNat, ~TyNat)),
+      ~s(TmAbs(~"a", ~TyNat, ~s(TmAbs(~"b", ~TyNat, body))))))));
+  let prog = ~s(TmLet(~"add", add_def, ~s(TmApp(~s(TmApp(~s(TmVar(0)), ~s(TmNat(3)))), ~s(TmNat(5))))));
+
   let ctx = &GlobalCtx::new();
 
   match typecheck(ctx, prog) {

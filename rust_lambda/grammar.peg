@@ -1,0 +1,36 @@
+module = stmt* EOF
+
+stmt        = stmt-term-bind / stmt-term-eval / stmt-command
+stmt-term-bind = ID '=' term
+stmt-term-eval = term
+stmt-command = ':' (cmd-quit / cmd-type / cmd-assert / cmd-pp /
+  cmd-debug-parsed)
+
+cmd-quit    = 'q'
+cmd-type    = 't' term
+cmd-assert  = 'a' term
+cmd-pp      = 'pp' term
+cmd-debug-parsed = '_p' term
+
+term        = term-4
+term-4      = term-let / term-if / term-fix / term-abs / term-3
+term-3      = term-apps
+term-2      = 'succ' term / 'pred' term / 'iszero' term / term-1
+term-1      = term-projs
+term-0      = 'true' / 'false' / 'unit' / INT / ID / term-tuple / '(' term ')'
+
+term-let    = 'let' ID '=' term-4 'in' term-4
+term-if     = 'if' term-4 'then' term-4 'else' term-4
+term-abs    = '\' ID ':' type '.' term-4
+term-fix    = 'fix' term-4
+
+term-apps   = term-2 (term-1)*
+term-projs  = term-0 ('.' proj)*
+proj        = INT
+term-tuple  = '{' (term (',' term)*)? '}'
+
+type        = type-2
+type-2      = type-arrow
+type-1      = 'Bool' / 'Nat' / 'Unit'
+
+type-arrow  = type-1 ('->' type-1)*
