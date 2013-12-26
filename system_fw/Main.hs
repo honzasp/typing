@@ -1,8 +1,12 @@
 module Main(main) where
+import Naming
+import Parser
 import Syntax
-import Typing
 
 main :: IO ()
 main = do
-  let identity = TmTAbs "a" KiStar . TmAbs "x" (TyVar 0) $ TmVar 0
-  print $ typeOf topCtxEmpty (TmTApp identity TyBool)
+  let p = parseStmts "<input>" "\\x:(\\a::*.a) Bool.b"
+  print p
+  let Right ([StmtEval unbndTerm]) = p
+  let topCtx = [("b",TopTermAbbr (TmTrue) (TyBool))]
+  print $ resolveTerm topCtx unbndTerm
