@@ -33,8 +33,8 @@ data Value v
 
 
 data Stmt
-  = StmtBind String UnbndTerm
-  | StmtTyAbbr String UnbndType
+  = StmtTermAbbr String UnbndTerm
+  | StmtTypeAbbr String UnbndType
   | StmtEval UnbndTerm
   | StmtCmd Command
   deriving Show

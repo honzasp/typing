@@ -1,13 +1,11 @@
 module Main(main) where
-import Naming
 import Parser
 import Syntax
-import Typing
+import Top
 
 main :: IO ()
 main = do
   let p = parseStmts "<input>" "\\x:(\\a::*.a) Bool.b"
-  let Right ([StmtEval unbndTerm]) = p
+  let Right ([stmt]) = p
   let topCtx = [("b",TopTermAbbr (TmTrue) (TyBool))]
-  let Right t = resolveTerm topCtx unbndTerm
-  print $ typeOf topCtx t
+  print $ execStmt topCtx stmt

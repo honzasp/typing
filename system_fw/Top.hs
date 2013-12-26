@@ -1,0 +1,56 @@
+module Top where
+import Eval
+import Naming
+import Syntax
+import Typing
+
+data StmtRes
+  = ResTermBound String (Term NameBind) (Type NameBind)
+  | ResTypeBound String (Type NameBind) Kind
+  | ResEval (Value NameBind) (Type NameBind)
+  | ResShowType (Type NameBind)
+  | ResShowKind Kind
+  | ResOk
+  deriving Show
+
+execStmt :: TopCtx -> Stmt -> Either String (TopCtx,StmtRes,Bool)
+execStmt topCtx stmt = case stmt of
+  StmtTermAbbr abbr uTerm -> do
+    (t,ty) <- termType uTerm
+    Right ((abbr,TopTermAbbr t ty):topCtx,ResTermBound abbr t ty,True)
+  StmtTypeAbbr abbr uType -> do
+    (ty,k) <- typeKind uType
+    Right ((abbr,TopTypeAbbr ty k):topCtx,ResTypeBound abbr ty k,True)
+  StmtEval uTerm -> do
+    (t,ty) <- termType uTerm
+    Right (topCtx,ResEval (eval topCtx t) ty,True)
+  StmtCmd cmd -> case cmd of
+    CmdAssert uTerm -> do
+      (t,ty) <- termType uTerm
+      case ty of
+        TyBool -> Right ()
+        _      -> Left $ "Assertion type must be Bool"
+      case eval topCtx t of
+        ValBool True -> Right (topCtx,ResOk,True)
+        _            -> Left $ "Assertion failed"
+    CmdType uTerm -> do
+      (_,ty) <- termType uTerm
+      Right (topCtx,ResShowType ty,True)
+    CmdKind uType -> do
+      (_,k) <- typeKind uType
+      Right (topCtx,ResShowKind k,True)
+    CmdQuit ->
+      Right (topCtx,ResOk,False)
+
+  where
+  termType :: Term String -> Either String (Term NameBind,Type NameBind)
+  termType uTerm = do
+    t <- resolveTerm topCtx uTerm
+    ty <- typeOf topCtx t
+    Right $ (t,ty)
+
+  typeKind :: Type String -> Either String (Type NameBind,Kind)
+  typeKind uType = do
+    ty <- resolveType topCtx uType
+    k <- kindOf topCtx ty
+    Right $ (ty,k)
