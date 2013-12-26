@@ -34,7 +34,7 @@ term :: Parser (Term String)
 term = term3 where
   term3 = termAbs <|> termTAbs <|> termIf <|> term2
   term2 = termApps
-  term1 = termVar <|> termBool <|> termUnit <|> paren term
+  term1 = termBool <|> termUnit <|> termVar <|> paren term
 
   termAbs = TmAbs 
     <$> (trySym "\\" >> identifier)
@@ -111,7 +111,7 @@ trySym = try . sym
 tryWord = try . word
 
 identifier :: Parser String
-identifier = (:) <$> idStartChar <*> many idChar
+identifier = (:) <$> idStartChar <*> many idChar <* spaces
 
 idStartChar, idChar :: Parser Char
 idStartChar = letter
