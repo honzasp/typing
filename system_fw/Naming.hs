@@ -10,8 +10,8 @@ import qualified Control.Monad.Identity as I
 
 import Syntax
 
-resolveTerm :: TopCtx -> Term String -> Either String (Term VarBind)
-resolveType :: TopCtx -> Type String -> Either String (Type VarBind)
+resolveTerm :: TopCtx -> Term String -> Either String (Term NameBind)
+resolveType :: TopCtx -> Type String -> Either String (Type NameBind)
 resolveTerm = fst . resolve
 resolveType = snd . resolve
 
@@ -28,8 +28,8 @@ resolve topCtx = (resTerm,resType) where
     | otherwise =
       Left $ "Variable `" ++ x ++ "` was not bound"
   
-renameTerm :: TopCtx -> Term VarBind -> Term String
-renameType :: TopCtx -> Type VarBind -> Type String
+renameTerm :: TopCtx -> Term NameBind -> Term String
+renameType :: TopCtx -> Type NameBind -> Type String
 renameTerm = fst . rename
 renameType = snd . rename
 
