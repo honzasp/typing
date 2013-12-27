@@ -112,7 +112,12 @@ trySym = try . sym
 tryWord = try . word
 
 identifier :: Parser String
-identifier = (:) <$> idStartChar <*> many idChar <* spaces
+identifier = id >>= notKeyword where
+  id = (:) <$> idStartChar <*> many idChar <* spaces
+  notKeyword w = if w `elem` keywords
+    then unexpected $ "keyword `" ++ w ++ "`"
+    else return w
+  keywords = ["if", "then", "else"]
 
 idStartChar, idChar :: Parser Char
 idStartChar = letter
