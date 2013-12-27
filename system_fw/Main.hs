@@ -60,11 +60,13 @@ execReplStmts topCtx (stmt:stmts) = do
       ResShowType ty -> putStrLn . render $ pType ty
       ResShowKind k -> putStrLn . render $ ppKind k
       ResShowCtx topCtx -> putStrLn . render . vcat $ map pTopBind topCtx
+      ResDumpStmt stmt -> putStrLn . show $ stmt
+      ResDumpTerm t -> putStrLn . show $ t
       ResOk -> return ()
 
     pTerm = ppTerm . renameTerm topCtx
     pType = ppType . renameType topCtx
-    pValue = ppValue . renameValue topCtx
+    pValue = ppValue
 
     pTopBind (x,bnd) = case bnd of
       TopTermAbbr t ty ->

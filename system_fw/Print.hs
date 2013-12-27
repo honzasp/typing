@@ -61,9 +61,10 @@ ppKind = ppKindP (2::Int) where
       KiArr k1 k2 -> (2,) $
         ppKindP 1 k1 <> text "->" <> ppKindP 2 k2
 
-ppValue :: Value String -> Doc
+ppValue :: Value v -> Doc
 ppValue v = case v of
-  ValLambda {} -> text "<fun>"
+  ValAbs {} -> text "#fun"
+  ValTAbs {} -> text "#tfun"
   ValBool True -> text "true"
   ValBool False -> text "false"
   ValUnit -> text "unit"

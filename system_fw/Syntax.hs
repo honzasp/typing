@@ -26,7 +26,8 @@ data Kind = KiStar | KiArr Kind Kind
 
 
 data Value v
-  = ValLambda String (Term v) [Value v]
+  = ValAbs String (Term v) [Value v]
+  | ValTAbs String (Term v) [Value v]
   | ValBool Bool
   | ValUnit
   deriving Show
@@ -44,6 +45,8 @@ data Command
   | CmdType UnbndTerm
   | CmdKind UnbndType
   | CmdCtx
+  | CmdDump Stmt
+  | CmdResolved UnbndTerm
   | CmdQuit
   deriving Show
 

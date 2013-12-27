@@ -1,1 +1,20 @@
+id = /\a.\x:a.x.
+not = \x:Bool.if x then false else true.
+
+:a true.
+:a not false.
+:a id[Bool] true.
+:a not (id[Bool] false).
+
 Pair := \a.\b.\/r.(a->b->r)->r.
+pair = /\a./\b.\x:a.\y:b.
+  /\r.\f:(a->b->r).f x y.
+fst = /\a./\b.\p:Pair a b.
+  p [a] (\x:a.\y:b.x).
+snd = /\a./\b.\p:Pair a b.
+  p [b] (\x:a.\y:b.y).
+
+:a fst[Bool][Bool] (pair[Bool][Bool] true false).
+:a (snd[Bool][Bool->Bool] (pair[Bool][Bool->Bool] false not)) false.
+
+:q.

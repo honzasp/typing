@@ -90,7 +90,9 @@ walkValue :: (Applicative m, Monad m)
 walkValue ctx bind use = walk ctx where
   walkTe ctx = walkTerm ctx bind use
   walk ctx v = case v of
-    ValLambda x t2 env -> ValLambda x' <$> walkTe ctx t2 <*> mapM (walk ctx') env
+    ValAbs x t2 env -> ValAbs x' <$> walkTe ctx t2 <*> mapM (walk ctx') env
+      where (ctx',x') = bind ctx x
+    ValTAbs x t2 env -> ValTAbs x' <$> walkTe ctx t2 <*> mapM (walk ctx') env
       where (ctx',x') = bind ctx x
     ValBool b -> pure $ ValBool b
     ValUnit -> pure $ ValUnit

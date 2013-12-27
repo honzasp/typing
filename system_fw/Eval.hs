@@ -8,13 +8,14 @@ evaluate topCtx = eval [] where
     TmVar (TopBind idx) ->
       let (_,TopTermAbbr t _):topCtx' = drop idx topCtx
       in  evaluate topCtx' t
-    TmAbs x _ t2 -> ValLambda x t2 env
+    TmAbs x _ t2 -> ValAbs x t2 env
     TmApp t1 t2 ->
-      let (v1,v2) = (eval env t1,eval env t2)
-          ValLambda _ t12 env = v1
-      in  eval (v2:env) t12
-    TmTAbs _ _ t2 -> eval env t2
-    TmTApp t1 _ -> eval env t1
+      let ValAbs _ t12 env1 = eval env t1
+      in  eval (eval env t2:env1) t12
+    TmTAbs x _ t2 -> ValTAbs x t2 env
+    TmTApp t1 _ -> 
+      let ValTAbs _ t12 env1 = eval env t1
+      in  eval (error "Dummy pseudo-type value used":env1) t12
     TmIf t1 t2 t3 ->
       let ValBool cond = eval env t1
       in  if cond then eval env t2 else eval env t3

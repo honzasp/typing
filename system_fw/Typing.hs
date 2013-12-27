@@ -1,4 +1,5 @@
-module Typing (typeOf, kindOf) where
+--module Typing (typeOf, kindOf) where
+module Typing where
 import Control.Applicative
 
 import Syntax
@@ -21,7 +22,7 @@ typecheck topCtx bnds t = typeSimplify topCtx <$> check bnds t where
       BindTermVar ty -> Right $ typeShift (idx+1) ty
       BindTypeVar _ -> Left $ "Type variable used in place of term"
     TmVar (TopBind idx) -> case snd $ topCtx !! idx of
-      TopTermAbbr _ ty -> Right $ typeShift (idx+1) ty
+      TopTermAbbr _ ty -> Right $ typeShiftTop (idx+1) ty
       TopTypeAbbr _ _ -> Left $ "Type abbreviation used in place of term"
     TmAbs _ ty1 t2 -> do
       k1 <- kindcheck topCtx bnds ty1 
@@ -95,7 +96,7 @@ kindcheck topCtx = check where
 typeWhnf :: TopCtx -> Type NameBind -> Type NameBind
 typeWhnf topCtx ty = case ty of
   TyVar (TopBind idx) | let TopTypeAbbr ty1 _ = snd $ topCtx !! idx ->
-    typeWhnf topCtx ty1
+    typeShiftTop (-idx-1) $ typeWhnf topCtx (typeShiftTop (idx+1) ty1)
   TyApp ty1 ty2 | TyAbs _ k11 ty12 <- typeWhnf topCtx ty1 ->
     typeWhnf topCtx $ typeApply ty2 ty12
   ty -> ty
@@ -118,18 +119,23 @@ typeEquiv topCtx = equiv where
     (_,_) -> False
 
 typeApply :: Type NameBind -> Type NameBind -> Type NameBind
-typeApply s bd = typeShift (-1) $ typeSubst 0 s bd
+typeApply s bd = typeShift (-1) $ typeSubst 0 (typeShift 1 s) bd
 
 typeSubst :: Int -> Type NameBind -> Type NameBind -> Type NameBind
 typeSubst x s = typeMap onvar where
   onvar c (LocalBind k)
-    | k == x + c = s
+    | k == x + c = typeShift c s
   onvar c bind   = TyVar bind
 
 typeShift :: Int -> Type NameBind -> Type NameBind
 typeShift d = typeMap onvar where
   onvar c (LocalBind k)
     | k >= c   = TyVar $ LocalBind (k+d)
+  onvar c bind = TyVar bind
+
+typeShiftTop :: Int -> Type NameBind -> Type NameBind
+typeShiftTop d = typeMap onvar where
+  onvar c (TopBind k) = TyVar $ TopBind (k+d)
   onvar c bind = TyVar bind
 
 typeMap :: (Int -> a -> Type b) -> Type a -> Type b
