@@ -1,4 +1,5 @@
 module Main(main) where
+import Control.Applicative
 import System.Environment(getArgs)
 import System.IO(hFlush, stdout)
 import Text.PrettyPrint
@@ -14,18 +15,22 @@ main = do
   files <- getArgs
   txts <- mapM readFile files
   let stmts = fmap concat . sequence $ zipWith parseStmts files txts 
-  case stmts >>= execFileStmts [] of
-    Left err -> putStrLn err
-    Right (Just topCtx') -> repl topCtx'
-    Right Nothing -> return ()
+  let topCtx = []
+  case execFileStmts topCtx <$> stmts of
+    Left err -> putStrLn err >> repl topCtx
+    Right (topCtx',r) -> case r of
+      Left err -> putStrLn err >> repl topCtx'
+      Right True -> repl topCtx'
+      Right False -> return ()
 
-execFileStmts :: TopCtx -> [Stmt] -> Either String (Maybe TopCtx)
-execFileStmts topCtx [] = Right $ Just topCtx
+execFileStmts :: TopCtx -> [Stmt] -> (TopCtx,Either String Bool)
+execFileStmts topCtx [] = (topCtx,Right True)
 execFileStmts topCtx (stmt:stmts) = do
-  (topCtx',_,continue) <- execStmt topCtx stmt
-  if continue
-    then execFileStmts topCtx' stmts
-    else return Nothing
+  case execStmt topCtx stmt of
+    Right (topCtx',_,continue) -> if continue
+      then execFileStmts topCtx' stmts
+      else (topCtx',Right False)
+    Left err -> (topCtx,Left err)
 
 repl :: TopCtx -> IO ()
 repl topCtx = do

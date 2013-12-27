@@ -125,4 +125,4 @@ identifier = id >>= notKeyword <?> "identifier" where
 
 idStartChar, idChar :: Parser Char
 idStartChar = letter
-idChar = alphaNum
+idChar = alphaNum <|> oneOf "_'"
