@@ -12,13 +12,10 @@ import Syntax
 
 resolveTerm :: TopCtx -> Term String -> Either String (Term NameBind)
 resolveType :: TopCtx -> Type String -> Either String (Type NameBind)
-resolveTerm = fst . resolve
-resolveType = snd . resolve
+resolveTerm = resolve walkTerm
+resolveType = resolve walkType
 
-resolve topCtx = (resTerm,resType) where
-  resTerm = walkTerm [] bind use
-  resType = walkType [] bind use
-
+resolve walk topCtx = walk [] bind use where
   bind vars x = x:vars
   use vars x
     | Just idx <- L.elemIndex x vars =
@@ -30,13 +27,10 @@ resolve topCtx = (resTerm,resType) where
   
 renameTerm :: TopCtx -> Term NameBind -> Term String
 renameType :: TopCtx -> Type NameBind -> Type String
-renameTerm = fst . rename
-renameType = snd . rename
+renameTerm = rename walkTerm
+renameType = rename walkType
 
-rename topCtx = (renTerm,renType) where
-  renTerm = I.runIdentity . walkTerm [] bind use
-  renType = I.runIdentity . walkType [] bind use
-
+rename walk topCtx = I.runIdentity . walk [] bind use where
   bind vars x = if L.elem x vars || M.isJust (L.lookup x topCtx)
     then bind vars (x++"'")
     else x:vars
