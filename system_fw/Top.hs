@@ -24,14 +24,14 @@ execStmt topCtx stmt = case stmt of
     Right ((abbr,TopTypeAbbr ty k):topCtx,ResTypeBound abbr ty k,True)
   StmtEval uTerm -> do
     (t,ty) <- termType uTerm
-    Right (topCtx,ResEval (eval topCtx t) ty,True)
+    Right (topCtx,ResEval (evaluate topCtx t) ty,True)
   StmtCmd cmd -> case cmd of
     CmdAssert uTerm -> do
       (t,ty) <- termType uTerm
       case ty of
         TyBool -> Right ()
         _      -> Left $ "Assertion type must be Bool"
-      case eval topCtx t of
+      case evaluate topCtx t of
         ValBool True -> Right (topCtx,ResOk,True)
         _            -> Left $ "Assertion failed"
     CmdType uTerm -> do
