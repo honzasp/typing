@@ -1,8 +1,11 @@
 module Main(main) where
 import System.Environment(getArgs)
 import System.IO(hFlush, stdout)
+import Text.PrettyPrint
 
+import Naming
 import Parser
+import Print
 import Syntax
 import Top
 
@@ -42,10 +45,29 @@ execReplStmts topCtx (stmt:stmts) = do
   (topCtx',res,continue) <- execStmt topCtx stmt
   let io = resIO res
   if continue then do
-    (mbCtx,io') <- execReplStmts topCtx stmts
+    (mbCtx,io') <- execReplStmts topCtx' stmts
     Right $ (mbCtx,io >> io')
   else do
     Right $ (Nothing,io)
   where
     resIO res = case res of
-      _ -> putStrLn "..."
+      ResTermBound x t ty -> putStrLn . render $
+        text x <+> text "=" <+> pTerm t <+> text ":" <+> pType ty
+      ResTypeBound x ty k -> putStrLn . render $
+        text x <+> text ":=" <+> pType ty <+> text "::" <+> ppKind k
+      ResEval v ty -> putStrLn . render $
+        pValue v <+> text ":" <+> pType ty
+      ResShowType ty -> putStrLn . render $ pType ty
+      ResShowKind k -> putStrLn . render $ ppKind k
+      ResShowCtx topCtx -> putStrLn . render . vcat $ map pTopBind topCtx
+      ResOk -> return ()
+
+    pTerm = ppTerm . renameTerm topCtx
+    pType = ppType . renameType topCtx
+    pValue = ppValue . renameValue topCtx
+
+    pTopBind (x,bnd) = case bnd of
+      TopTermAbbr t ty ->
+        text x <+> text "=" <+> pTerm t <+> text ":" <+> pType ty
+      TopTypeAbbr ty k ->
+        text x <+> text ":=" <+> pType ty <+> text "::" <+> ppKind k

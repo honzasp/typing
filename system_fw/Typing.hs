@@ -28,7 +28,7 @@ typecheck topCtx bnds t = typeSimplify topCtx <$> check bnds t where
       case k1 of
         KiStar -> Right ()
         KiArr _ _ -> Left $ "Term abstraction must be over proper type"
-      ty2 <- check (BindTermVar ty1:bnds) t2
+      ty2 <- typeShift (-1) <$> check (BindTermVar ty1:bnds) t2
       Right $ TyArr ty1 ty2
     TmApp t1 t2 -> do
       ty1 <- check bnds t1

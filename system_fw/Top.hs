@@ -10,6 +10,7 @@ data StmtRes
   | ResEval (Value NameBind) (Type NameBind)
   | ResShowType (Type NameBind)
   | ResShowKind Kind
+  | ResShowCtx TopCtx
   | ResOk
   deriving Show
 
@@ -39,6 +40,8 @@ execStmt topCtx stmt = case stmt of
     CmdKind uType -> do
       (_,k) <- typeKind uType
       Right (topCtx,ResShowKind k,True)
+    CmdCtx ->
+      Right (topCtx,ResShowCtx topCtx,True)
     CmdQuit ->
       Right (topCtx,ResOk,False)
 

@@ -43,6 +43,7 @@ data Command
   = CmdAssert UnbndTerm
   | CmdType UnbndTerm
   | CmdKind UnbndType
+  | CmdCtx
   | CmdQuit
   deriving Show
 

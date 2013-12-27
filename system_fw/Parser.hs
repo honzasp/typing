@@ -23,10 +23,11 @@ stmt = stmtTermAbbr <|> stmtTypeAbbr <|> stmtCmd <|> stmtEval where
   stmtEval = StmtEval <$> term
 
 cmd :: Parser Command
-cmd = trySym "!" >> choice
+cmd = trySym ":" >> choice
   [ tryWord "a" >> CmdAssert <$> term
   , tryWord "t" >> CmdType <$> term
   , tryWord "k" >> CmdKind <$> ty
+  , tryWord "ctx" >> return CmdCtx
   , tryWord "q" >> return CmdQuit
   ]
 
