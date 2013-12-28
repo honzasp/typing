@@ -1,4 +1,5 @@
 id = /\a.\x:a.x.
+const = /\a./\b.\x:b.\y:a.x.
 not = \x:Bool.if x then false else true.
 
 :a true.
@@ -17,4 +18,32 @@ snd = /\a./\b.\p:Pair a b.
 :a fst[Bool][Bool] (pair[Bool][Bool] true false).
 :a (snd[Bool][Bool->Bool] (pair[Bool][Bool->Bool] false not)) false.
 
-:q.
+Maybe := \a.\/r.(a->r)->r->r.
+Either := \e.\a.\/r.(e->r)->(a->r)->r.
+
+Monad_bind := \m::*->*. \/a.\/b. m a -> (a -> m b) -> m b.
+Monad_return := \m::*->*. \/a. a -> m a.
+
+just = /\a.\x:a.
+  /\r.\f:(a->r).\d:r.f x.
+nothing = /\a.
+  /\r.\f:(a->r).\d:r.d.
+bind_maybe = /\a./\b.
+  \m:Maybe a. \f:a->Maybe b.
+    m[Maybe b] (\x:a.f x) (nothing[b]).
+
+left = /\e./\a.\x:e.
+  /\r.\fl:(e->r).\fr:(a->r).fl x.
+right = /\e./\a.\x:a.
+  /\r.\fl:(e->r).\fr:(a->r).fr x.
+bind_either = /\e. /\a./\b.
+  \m:Either e a. \f:a->Either e b.
+    m[Either e b] (\lt:e.left[e][b] lt) (\rt:a. f rt).
+
+:a (just[Bool] false)[Bool] not false.
+:a (nothing[Bool])[Bool] (id[Bool]) true.
+
+:a (left[Bool][Unit] false)[Bool] (not) (const[Unit][Bool] false).
+:a (right[Unit][Unit] unit)[Bool]
+  (const[Unit][Bool] false)
+  (const[Unit][Bool] true).
