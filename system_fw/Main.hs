@@ -1,5 +1,6 @@
 module Main(main) where
 import Control.Applicative
+import qualified Data.List as L
 import System.Environment(getArgs)
 import System.IO(hFlush, stdout)
 import Text.PrettyPrint
@@ -64,7 +65,7 @@ execReplStmts topCtx (stmt:stmts) = do
         pValue v <+> text ":" <+> pType ty
       ResShowType ty -> putStrLn . render $ pType ty
       ResShowKind k -> putStrLn . render $ ppKind k
-      ResShowCtx topCtx -> putStrLn . render . vcat $ map pTopBind topCtx
+      ResShowCtx topCtx -> putStrLn . render . vcat $ pCtx topCtx
       ResDumpStmt stmt -> putStrLn . show $ stmt
       ResDumpTerm t -> putStrLn . show $ t
       ResOk -> return ()
@@ -73,8 +74,12 @@ execReplStmts topCtx (stmt:stmts) = do
     pType = ppType . renameType topCtx
     pValue = ppValue
 
-    pTopBind (x,bnd) = case bnd of
+    pTopBind (x,bnd) ctx = case bnd of
       TopTermAbbr t ty ->
-        text x <+> text "=" <+> pTerm t <+> text ":" <+> pType ty
+        text x <+> text "=" <+> ppTerm (renameTerm ctx t) <+>
+        text ":" <+> ppType (renameType ctx ty)
       TopTypeAbbr ty k ->
-        text x <+> text ":=" <+> pType ty <+> text "::" <+> ppKind k
+        text x <+> text ":=" <+> ppType (renameType ctx ty) <+>
+        text "::" <+> ppKind k
+
+    pCtx ctx = reverse [pTopBind (x,bnd) ctx' | ((x,bnd):ctx') <- L.tails ctx]

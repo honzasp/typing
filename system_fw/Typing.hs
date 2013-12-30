@@ -16,7 +16,7 @@ kindOf :: TopCtx -> Type NameBind -> Either String Kind
 kindOf topCtx = kindcheck topCtx []
 
 typecheck :: TopCtx -> [VarBind] -> Term NameBind -> Either String (Type NameBind)
-typecheck topCtx bnds t = typeSimplify topCtx <$> check bnds t where
+typecheck topCtx bnds t = check bnds t where
   check bnds t = case t of
     TmVar (LocalBind idx) -> case bnds !! idx of
       BindTermVar ty -> Right $ typeShift (idx+1) ty
@@ -36,7 +36,7 @@ typecheck topCtx bnds t = typeSimplify topCtx <$> check bnds t where
       ty2 <- check bnds t2
       case typeWhnf topCtx ty1 of
         TyArr ty11 ty12 | typeEquiv topCtx ty11 ty2 -> Right ty12
-        TyArr {} -> Left "Applied type does not match function"
+        TyArr {} -> Left "Type of applied term does not match function"
         TyAll {} -> Left "Term was applied to forall type (missing type application?)"
         _        -> Left "Only functions may be applied"
     TmTAbs x k1 t2 ->
@@ -57,6 +57,11 @@ typecheck topCtx bnds t = typeSimplify topCtx <$> check bnds t where
         if typeEquiv topCtx ty2 ty3 then Right ty2
         else Left "Condition arms do not match"
       else Left "Condition guard must be Bool"
+    TmAs t1 ty2 -> do
+      ty1 <- check bnds t1
+      if typeEquiv topCtx ty1 ty2
+        then Right ty2
+        else Left $ "Type ascription mismatch"
     TmTrue -> Right TyBool
     TmFalse -> Right TyBool
     TmUnit -> Right TyUnit
@@ -109,7 +114,7 @@ typeEquiv topCtx = equiv where
     (TyAbs _ k1 s1,TyAbs _ k2 s2) ->
       k1 == k2 && equiv s1 s2
     (TyApp s11 s12,TyApp s21 s22) ->
-      equiv s11 s21 && equiv s21 s22
+      equiv s11 s21 && equiv s12 s22
     (TyAll _ k1 s1,TyAll _ k2 s2) ->
       k1 == k2 && equiv s1 s2
     (TyArr s11 s12,TyArr s21 s22) ->

@@ -35,25 +35,33 @@ cmd = trySym ":" >> choice
   ] <?> "command"
 
 term :: Parser (Term String)
-term = term3 <?> "term" where
-  term3 = termAbs <|> termTAbs <|> termIf <|> term2
+term = term4 <?> "term" where
+  term4 = termAbs <|> termTAbs <|> termIf <|> term3
+  term3 = termAs
   term2 = termApps
   term1 = termBool <|> termUnit <|> termVar <|> paren term
 
   termAbs = TmAbs 
     <$> (trySym "\\" >> identifier)
     <*> (sym ":" >> ty)
-    <*> (sym "." >> term3)
+    <*> (sym "." >> term4)
 
   termTAbs = TmTAbs
     <$> (trySym "/\\" >> identifier)
     <*> optionalKind
-    <*> (sym "." >> term3)
+    <*> (sym "." >> term4)
 
   termIf = TmIf
-    <$> (tryWord "if" >> term3)
-    <*> (word "then" >> term3)
-    <*> (word "else" >> term3)
+    <$> (tryWord "if" >> term4)
+    <*> (word "then" >> term4)
+    <*> (word "else" >> term4)
+
+  termAs = do
+    t <- term2
+    mbTy <- optionMaybe $ tryWord "as" >> ty
+    case mbTy of
+      Just ty -> return $ TmAs t ty
+      Nothing -> return t
 
   -- TODO: get rid of `do`
   termApps = do
@@ -121,7 +129,7 @@ identifier = id >>= notKeyword <?> "identifier" where
   notKeyword w = if w `elem` keywords
     then unexpected $ "keyword `" ++ w ++ "`"
     else return w
-  keywords = ["if", "then", "else"]
+  keywords = ["if", "then", "else", "as"]
 
 idStartChar, idChar :: Parser Char
 idStartChar = letter

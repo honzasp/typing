@@ -9,22 +9,24 @@ ppTerm = ppTermP (3::Int) where
   ppTermP prec t = if prec' <= prec then doc else parens doc where
     (prec',doc) = case t of
       TmVar x -> (1,) $ text x
-      TmAbs x ty1 t2 -> (3,) $
+      TmAbs x ty1 t2 -> (4,) $
         text "\\" <> text x <>
         text ":" <> ppType ty1 <>
         text "." <> ppTermP 3 t2
       TmApp t1 t2 -> (2,) $
         ppTermP 2 t1 <+> ppTermP 1 t2
-      TmTAbs x k1 t2 -> (3,) $
+      TmTAbs x k1 t2 -> (4,) $
         text "/\\" <> text x <>
         ppOptKind k1 <>
         text "." <> ppTermP 3 t2
       TmTApp t1 ty2 -> (2,) $
         ppTermP 2 t1 <+> brackets (ppType ty2)
-      TmIf t1 t2 t3 -> (3,) $
+      TmIf t1 t2 t3 -> (4,) $
         text "if" <+> ppTermP 2 t1 <+>
         text "then" <+> ppTermP 2 t2 <+>
         text "else" <+> ppTermP 2 t3
+      TmAs t1 ty2 -> (3,) $
+        ppTermP 2 t1 <+> text "as" <+> ppType ty2
       TmTrue -> (1,) $ text "true"
       TmFalse -> (1,) $ text "false"
       TmUnit -> (1,) $ text "unit"

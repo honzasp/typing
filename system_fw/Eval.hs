@@ -19,6 +19,7 @@ evaluate topCtx = eval [] where
     TmIf t1 t2 t3 ->
       let ValBool cond = eval env t1
       in  if cond then eval env t2 else eval env t3
+    TmAs t1 ty2 -> eval env t1
     TmTrue -> ValBool True
     TmFalse -> ValBool False
     TmUnit -> ValUnit

@@ -59,6 +59,7 @@ walkTerm ctx bind use = walk ctx where
       where (ctx',x') = bind ctx x
     TmTApp t1 ty2 -> TmTApp <$> walk ctx t1 <*> walkTy ctx ty2
     TmIf t1 t2 t3 -> TmIf <$> walk ctx t1 <*> walk ctx t2 <*> walk ctx t3
+    TmAs t1 ty2 -> TmAs <$> walk ctx t1 <*> walkTy ctx ty2
     TmTrue -> pure TmTrue
     TmFalse -> pure TmFalse
     TmUnit -> pure TmUnit

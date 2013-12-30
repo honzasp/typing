@@ -7,7 +7,9 @@ data Term v
   | TmTAbs String Kind (Term v)
   | TmTApp (Term v) (Type v)
   | TmIf (Term v) (Term v) (Term v)
-  | TmTrue | TmFalse
+  | TmAs (Term v) (Type v)
+  | TmTrue 
+  | TmFalse
   | TmUnit
   deriving Show
 
