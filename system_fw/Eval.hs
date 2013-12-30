@@ -1,4 +1,6 @@
 module Eval(evaluate) where
+import Control.Applicative
+
 import Syntax
 
 evaluate :: TopCtx -> Term NameBind -> Value NameBind
@@ -20,6 +22,11 @@ evaluate topCtx = eval [] where
       let ValBool cond = eval env t1
       in  if cond then eval env t2 else eval env t3
     TmAs t1 ty2 -> eval env t1
+    TmRcd fs -> ValRcd $ map (eval env <$>) fs
+    TmProj t1 f -> 
+      let ValRcd fs = eval env t1
+          Just v2 = lookup f fs
+      in v2
     TmTrue -> ValBool True
     TmFalse -> ValBool False
     TmUnit -> ValUnit

@@ -1,5 +1,5 @@
 module Parser(parseStmts) where
-import Control.Applicative((<$>), (<$), (<*>), (<*), (*>))
+import Control.Applicative((<$>), (<$), (<*>), (<*))
 import qualified Data.Maybe as M
 import Text.Parsec
 
@@ -35,29 +35,30 @@ cmd = trySym ":" >> choice
   ] <?> "command"
 
 term :: Parser (Term String)
-term = term4 <?> "term" where
-  term4 = termAbs <|> termTAbs <|> termIf <|> term3
-  term3 = termAs
-  term2 = termApps
-  term1 = termBool <|> termUnit <|> termVar <|> paren term
+term = term5 <?> "term" where
+  term5 = termAbs <|> termTAbs <|> termIf <|> term4
+  term4 = termAs
+  term3 = termApps
+  term2 = termProjs
+  term1 = termBool <|> termUnit <|> termVar <|> termRcd <|> paren term
 
   termAbs = TmAbs 
     <$> (trySym "\\" >> identifier)
     <*> (sym ":" >> ty)
-    <*> (sym "." >> term4)
+    <*> (sym "." >> term5)
 
   termTAbs = TmTAbs
     <$> (trySym "/\\" >> identifier)
     <*> optionalKind
-    <*> (sym "." >> term4)
+    <*> (sym "." >> term5)
 
   termIf = TmIf
-    <$> (tryWord "if" >> term4)
-    <*> (word "then" >> term4)
-    <*> (word "else" >> term4)
+    <$> (tryWord "if" >> term5)
+    <*> (word "then" >> term5)
+    <*> (word "else" >> term5)
 
   termAs = do
-    t <- term2
+    t <- term3
     mbTy <- optionMaybe $ tryWord "as" >> ty
     case mbTy of
       Just ty -> return $ TmAs t ty
@@ -65,13 +66,20 @@ term = term4 <?> "term" where
 
   -- TODO: get rid of `do`
   termApps = do
-    hd <- term1
+    hd <- term2
     tl <- many app
-    return $ foldl (flip ($)) hd tl
+    return $ foldl (flip ($)) hd tl 
+    where
+    app = (flip TmApp) <$> term2 <|>
+          (flip TmTApp) <$> between (trySym "[") (sym "]") ty
 
-  app :: Parser (Term String -> Term String)
-  app = (flip TmApp) <$> term1 <|>
-        (flip TmTApp) <$> (trySym "[" *> ty <* sym "]")
+  termProjs = do
+    hd <- term1
+    tl <- many $ trySym "#" >> identifier
+    return $ foldl TmProj hd tl
+
+  termRcd = TmRcd <$> between (trySym "{") (sym "}") (field `sepBy` sym ",") where
+    field = (,) <$> identifier <*> (sym "=" >> term)
 
   termVar = TmVar <$> try identifier
   termBool = TmTrue <$ tryWord "true" <|> TmFalse <$ tryWord "false"
@@ -82,7 +90,7 @@ ty = ty4 <?> "type" where
   ty4 = tyAll <|> tyAbs <|> ty3
   ty3 = tyArrs
   ty2 = tyApps
-  ty1 = tyBool <|> tyUnit <|> tyVar <|> paren ty
+  ty1 = tyBool <|> tyUnit <|> tyVar <|> tyRcd <|> paren ty
 
   tyAll = TyAll
     <$> (trySym "\\/" >> identifier)
@@ -96,6 +104,9 @@ ty = ty4 <?> "type" where
 
   tyArrs = ty2 `chainr1` (TyArr <$ trySym "->")
   tyApps = ty1 `chainl1` (return TyApp)
+
+  tyRcd = TyRcd <$> between (trySym "{") (sym "}") (field `sepBy` sym ",") where
+    field = (,) <$> identifier <*> (sym "=" >> ty4)
 
   tyBool = TyBool <$ tryWord "Bool"
   tyUnit = TyUnit <$ tryWord "Unit"

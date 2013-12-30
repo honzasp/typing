@@ -52,6 +52,27 @@ return_either = right.
   (const[Unit][Bool] false)
   (const[Unit][Bool] true).
 
-monad_fmap = /\m::*->*. \bind:Monad_bind m. \return:Monad_return m.
-  /\a./\b. \f:a->b. \r:m a. bind[a][b] r (\x:a. return[b] (f x)).
+rcd1 = {x=true,y=not}.
+:a rcd1#x.
+:a rcd1#y false.
 
+and = \x:Bool.\y:Bool. if x then y else false.
+or = \x:Bool.\y:Bool. if x then true else y.
+
+Monoid := \m.
+  { mempty = m
+  , mappend = m->m->m
+  }.
+
+Monoid_Bool_and =
+  { mempty = true
+  , mappend = and
+  } as Monoid Bool.
+
+Monoid_Bool_or =
+  { mempty = false
+  , mappend = or
+  } as Monoid Bool.
+
+mdouble = /\m.\monoid:Monoid m.
+  \x:m. monoid#mappend x x.

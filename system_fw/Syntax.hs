@@ -8,6 +8,8 @@ data Term v
   | TmTApp (Term v) (Type v)
   | TmIf (Term v) (Term v) (Term v)
   | TmAs (Term v) (Type v)
+  | TmRcd [(String,Term v)]
+  | TmProj (Term v) String
   | TmTrue 
   | TmFalse
   | TmUnit
@@ -19,6 +21,7 @@ data Type v
   | TyApp (Type v) (Type v)
   | TyAll String Kind (Type v)
   | TyArr (Type v) (Type v)
+  | TyRcd [(String,Type v)]
   | TyBool
   | TyUnit
   deriving Show
@@ -30,6 +33,7 @@ data Kind = KiStar | KiArr Kind Kind
 data Value v
   = ValAbs String (Term v) [Value v]
   | ValTAbs String (Term v) [Value v]
+  | ValRcd [(String,Value v)]
   | ValBool Bool
   | ValUnit
   deriving Show

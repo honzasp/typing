@@ -62,6 +62,15 @@ typecheck topCtx bnds t = check bnds t where
       if typeEquiv topCtx ty1 ty2
         then Right ty2
         else Left $ "Type ascription mismatch"
+    TmRcd fs -> do
+      tys <- mapM (check bnds) (map snd fs)
+      Right . TyRcd $ zip (map fst fs) tys
+    TmProj t1 f -> do
+      ty1 <- check bnds t1
+      case typeWhnf topCtx ty1 of
+        TyRcd fs | Just ty2 <- lookup f fs -> Right ty2
+        TyRcd{}  -> Left "Missing field projected"
+        _        -> Left "Only records may be projected"
     TmTrue -> Right TyBool
     TmFalse -> Right TyBool
     TmUnit -> Right TyUnit
@@ -95,6 +104,11 @@ kindcheck topCtx = check where
       if k1 == KiStar && k2 == KiStar
         then Right KiStar
         else Left "Types in arrow must have star kind"
+    TyRcd fs -> do
+      ks <- mapM (check bnds . snd) fs
+      if all (== KiStar) ks
+        then Right KiStar
+        else Left "All record types must have star kind"
     TyBool -> Right KiStar
     TyUnit -> Right KiStar
 
@@ -119,9 +133,16 @@ typeEquiv topCtx = equiv where
       k1 == k2 && equiv s1 s2
     (TyArr s11 s12,TyArr s21 s22) ->
       equiv s11 s21 && equiv s12 s22
+    (TyRcd fs1,TyRcd fs2) ->
+      fieldsEquiv fs1 fs2
     (TyBool,TyBool) -> True
     (TyUnit,TyUnit) -> True
     (_,_) -> False
+
+  fieldsEquiv [] [] = True
+  fieldsEquiv ((f1,ty1):fs1) ((f2,ty2):fs2) =
+    f1 == f2 && equiv ty1 ty2 && fieldsEquiv fs1 fs2
+  fieldsEquiv _ _ = False
 
 typeApply :: Type NameBind -> Type NameBind -> Type NameBind
 typeApply s bd = typeShift (-1) $ typeSubst 0 (typeShift 1 s) bd
@@ -151,19 +172,6 @@ typeMap onvar = walk 0 where
     TyApp ty1 ty2 -> TyApp (walk c ty1) (walk c ty2)
     TyAll x k ty1 -> TyAll x k (walk (c+1) ty1)
     TyArr ty1 ty2 -> TyArr (walk c ty1) (walk c ty2)
-    TyBool -> TyBool
-    TyUnit -> TyUnit
-
-typeSimplify :: TopCtx -> Type NameBind -> Type NameBind
-typeSimplify topCtx = simpl where
-  simpl ty = case ty of
-    TyVar bnd -> TyVar bnd
-    TyAbs x k1 ty2 -> TyAbs x k1 (simpl ty2)
-    TyApp ty1 ty2 
-      | TyAbs _ _ ty12 <- s1 -> simpl $ typeApply s2 ty12
-      | otherwise            -> TyApp s1 s2
-      where (s1,s2) = (simpl ty1,simpl ty2)
-    TyAll x k1 ty2 -> TyAll x k1 (simpl ty2)
-    TyArr ty1 ty2 -> TyArr (simpl ty1) (simpl ty2)
+    TyRcd fs -> TyRcd (map (walk c <$>) fs)
     TyBool -> TyBool
     TyUnit -> TyUnit
