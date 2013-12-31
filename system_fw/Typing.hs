@@ -1,6 +1,8 @@
 --module Typing (typeOf, kindOf) where
 module Typing where
 import Control.Applicative
+import Control.Monad
+import qualified Data.Maybe as M
 
 import Syntax
 
@@ -59,9 +61,9 @@ typecheck topCtx bnds t = check bnds t where
       else Left "Condition guard must be Bool"
     TmAs t1 ty2 -> do
       ty1 <- check bnds t1
-      if typeEquiv topCtx ty1 ty2
+      if typeSub topCtx ty1 ty2
         then Right ty2
-        else Left $ "Type ascription mismatch"
+        else Left $ "Invalid upcast"
     TmRcd fs -> do
       tys <- mapM (check bnds) (map snd fs)
       Right . TyRcd $ zip (map fst fs) tys
@@ -143,6 +145,20 @@ typeEquiv topCtx = equiv where
   fieldsEquiv ((f1,ty1):fs1) ((f2,ty2):fs2) =
     f1 == f2 && equiv ty1 ty2 && fieldsEquiv fs1 fs2
   fieldsEquiv _ _ = False
+
+typeSub :: TopCtx -> Type NameBind -> Type NameBind -> Bool
+typeSub topCtx = sub where
+  sub ty1 ty2 = case (typeWhnf topCtx ty1,typeWhnf topCtx ty2) of
+    (TyRcd fs1,TyRcd fs2) ->
+      rcdSub fs1 fs2
+    (TyArr ty11 ty12,TyArr ty21 ty22) ->
+      sub ty21 ty11 && sub ty12 ty22
+    (_,_) -> typeEquiv topCtx ty1 ty2
+
+  rcdSub fs1 fs2 = all fieldSub fs2 where
+    fieldSub (l,ty2) = M.isJust $ do
+      ty1 <- lookup l fs1
+      if sub ty1 ty2 then Just () else Nothing
 
 typeApply :: Type NameBind -> Type NameBind -> Type NameBind
 typeApply s bd = typeShift (-1) $ typeSubst 0 (typeShift 1 s) bd
