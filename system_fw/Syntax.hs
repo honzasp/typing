@@ -12,6 +12,7 @@ data Term v
   | TmProj (Term v) String
   | TmVariant String (Term v)
   | TmCase (Term v) [(String,String,Term v)]
+  | TmLet String (Term v) (Term v)
   | TmTrue 
   | TmFalse
   | TmUnit

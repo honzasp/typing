@@ -96,6 +96,9 @@ typecheck topCtx bnds t = check bnds t where
             _:_ -> Left "Case alternative type mismatch"
             []  -> Left "Empty case"
         _ -> Left "Case can be used only with variant types"
+    TmLet _ t1 t2 -> do
+      ty1 <- check bnds t1
+      check (BindTermVar ty1:bnds) t2
     TmTrue -> Right TyBool
     TmFalse -> Right TyBool
     TmUnit -> Right TyUnit

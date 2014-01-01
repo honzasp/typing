@@ -40,6 +40,9 @@ ppTerm = ppTermP (3::Int) where
         where alt (l,x,t') =
                 text "<" <> text l <> text "=" <> text ">" <>
                 text "." <> ppTermP 4 t'
+      TmLet x t1 t2 -> (5,) $
+        text "let" <+> text x <> text "=" <> ppTermP 4 t1 <+>
+        text "in" <+> ppTermP 4 t2
       TmTrue -> (1,) $ text "true"
       TmFalse -> (1,) $ text "false"
       TmUnit -> (1,) $ text "unit"

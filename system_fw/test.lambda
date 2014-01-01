@@ -109,3 +109,6 @@ nvalue <- not value.
 fun1 <- \x:Bool. not x.
 fun2 <- \x:Bool. not (fun1 x).
 :a fun2 true.
+
+:a let x=true in x.
+:a let x=not true in if x then false else true.

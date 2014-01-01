@@ -66,6 +66,8 @@ walkTerm ctx bind use = walk ctx where
     TmVariant l t1 -> TmVariant l <$> walk ctx t1
     TmCase t1 alts -> TmCase <$> walk ctx t1 <*> mapM walkAlt alts
       where walkAlt (l,x,t') = let (ctx',x') = bind ctx x in (l,x',) <$> walk ctx' t'
+    TmLet x t1 t2 -> TmLet x' <$> walk ctx t1 <*> walk ctx' t2
+      where (ctx',x') = bind ctx x
     TmTrue -> pure TmTrue
     TmFalse -> pure TmFalse
     TmUnit -> pure TmUnit

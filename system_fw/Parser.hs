@@ -40,7 +40,7 @@ cmd = trySym ":" >> choice
 
 term :: Parser (Term String)
 term = term5 <?> "term" where
-  term5 = termAbs <|> termTAbs <|> termIf <|> termCase <|> term4
+  term5 = termAbs <|> termTAbs <|> termIf <|> termCase <|> termLet <|> term4
   term4 = termAs
   term3 = termApps
   term2 = termProjs
@@ -69,6 +69,11 @@ term = term5 <?> "term" where
     <$> (sym "<" >> identifier)
     <*> (sym "=" >> identifier)
     <*> (sym ">" >> sym "." >> term5)
+
+  termLet = TmLet
+    <$> (tryWord "let" >> identifier)
+    <*> (sym "=" >> term5)
+    <*> (word "in" >> term5)
 
   termAs = do
     t <- term3
@@ -161,7 +166,7 @@ identifier = id >>= notKeyword <?> "identifier" where
   notKeyword w = if w `elem` keywords
     then unexpected $ "keyword `" ++ w ++ "`"
     else return w
-  keywords = ["if", "then", "else", "as", "case", "of"]
+  keywords = ["if", "then", "else", "as", "case", "of", "let", "in"]
 
 idStartChar, idChar :: Parser Char
 idStartChar = letter <|> oneOf "_"
