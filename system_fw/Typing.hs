@@ -3,6 +3,7 @@ module Typing where
 import Control.Applicative
 import Control.Monad
 import qualified Data.Maybe as M
+import qualified Data.List as L
 
 import Syntax
 
@@ -73,6 +74,27 @@ typecheck topCtx bnds t = check bnds t where
         TyRcd fs | Just ty2 <- lookup f fs -> Right ty2
         TyRcd{}  -> Left "Missing field projected"
         _        -> Left "Only records may be projected"
+    TmVariant l t1 -> do
+      ty1 <- check bnds t1
+      Right $ TyVariant [(l,ty1)]
+    TmCase t1 alts -> do
+      ty1 <- check bnds t1
+      case typeWhnf topCtx ty1 of
+        TyVariant vars -> do
+          let headLs = map (\(l,_) -> l) vars
+          let bodyLs = map (\(l,_,_) -> l) alts
+          if null $ headLs L.\\ bodyLs then Right ()
+            else Left "Case misses some variants"
+          bodyTys <- forM alts $ \(l,_,t2) -> do
+            elemTy <- case lookup l vars of
+              Just elemTy -> Right elemTy
+              Nothing -> Left "Redundant case alternative"
+            typeShift (-1) <$> check (BindTermVar elemTy:bnds) t2
+          case bodyTys of
+            bty:btys | L.all (typeEquiv topCtx bty) btys -> Right bty
+            _:_ -> Left "Case alternative type mismatch"
+            []  -> Left "Empty case"
+        _ -> Left "Case can be used only with variant types"
     TmTrue -> Right TyBool
     TmFalse -> Right TyBool
     TmUnit -> Right TyUnit
@@ -110,7 +132,12 @@ kindcheck topCtx = check where
       ks <- mapM (check bnds . snd) fs
       if all (== KiStar) ks
         then Right KiStar
-        else Left "All record types must have star kind"
+        else Left "All record fields must have star kind"
+    TyVariant vars -> do
+      ks <- mapM (check bnds . snd) vars
+      if all (== KiStar) ks
+        then Right KiStar
+        else Left "All variants must have star kind"
     TyBool -> Right KiStar
     TyUnit -> Right KiStar
 
@@ -136,15 +163,17 @@ typeEquiv topCtx = equiv where
     (TyArr s11 s12,TyArr s21 s22) ->
       equiv s11 s21 && equiv s12 s22
     (TyRcd fs1,TyRcd fs2) ->
-      fieldsEquiv fs1 fs2
+      labelsEquiv fs1 fs2
+    (TyVariant vs1,TyVariant vs2) ->
+      labelsEquiv vs1 vs2
     (TyBool,TyBool) -> True
     (TyUnit,TyUnit) -> True
     (_,_) -> False
 
-  fieldsEquiv [] [] = True
-  fieldsEquiv ((f1,ty1):fs1) ((f2,ty2):fs2) =
-    f1 == f2 && equiv ty1 ty2 && fieldsEquiv fs1 fs2
-  fieldsEquiv _ _ = False
+  labelsEquiv [] [] = True
+  labelsEquiv ((l1,ty1):ps1) ((l2,ty2):ps2) =
+    l1 == l2 && equiv ty1 ty2 && labelsEquiv ps1 ps2
+  labelsEquiv _ _ = False
 
 typeSub :: TopCtx -> Type NameBind -> Type NameBind -> Bool
 typeSub topCtx = sub where
@@ -153,11 +182,18 @@ typeSub topCtx = sub where
       rcdSub fs1 fs2
     (TyArr ty11 ty12,TyArr ty21 ty22) ->
       sub ty21 ty11 && sub ty12 ty22
+    (TyVariant vs1,TyVariant vs2) ->
+      variantSub vs1 vs2
     (_,_) -> typeEquiv topCtx ty1 ty2
 
   rcdSub fs1 fs2 = all fieldSub fs2 where
     fieldSub (l,ty2) = M.isJust $ do
       ty1 <- lookup l fs1
+      if sub ty1 ty2 then Just () else Nothing
+
+  variantSub vs1 vs2 = all varSub vs1 where
+    varSub (l,ty1) = M.isJust $ do
+      ty2 <- lookup l vs2
       if sub ty1 ty2 then Just () else Nothing
 
 typeApply :: Type NameBind -> Type NameBind -> Type NameBind
@@ -189,5 +225,6 @@ typeMap onvar = walk 0 where
     TyAll x k ty1 -> TyAll x k (walk (c+1) ty1)
     TyArr ty1 ty2 -> TyArr (walk c ty1) (walk c ty2)
     TyRcd fs -> TyRcd (map (walk c <$>) fs)
+    TyVariant vs -> TyVariant (map (walk c <$>) vs)
     TyBool -> TyBool
     TyUnit -> TyUnit

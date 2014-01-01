@@ -10,6 +10,8 @@ data Term v
   | TmAs (Term v) (Type v)
   | TmRcd [(String,Term v)]
   | TmProj (Term v) String
+  | TmVariant String (Term v)
+  | TmCase (Term v) [(String,String,Term v)]
   | TmTrue 
   | TmFalse
   | TmUnit
@@ -22,6 +24,7 @@ data Type v
   | TyAll String Kind (Type v)
   | TyArr (Type v) (Type v)
   | TyRcd [(String,Type v)]
+  | TyVariant [(String,Type v)]
   | TyBool
   | TyUnit
   deriving Show
@@ -31,11 +34,13 @@ data Kind = KiStar | KiArr Kind Kind
 
 
 data Value v
-  = ValAbs String (Term v) [Value v]
-  | ValTAbs String (Term v) [Value v]
+  = ValAbs String (Term v) [Value v] TopCtx
+  | ValTAbs String (Term v) [Value v] TopCtx
   | ValRcd [(String,Value v)]
+  | ValVariant String (Value v)
   | ValBool Bool
   | ValUnit
+  | ValDummyType
   deriving Show
 
 
@@ -52,6 +57,7 @@ data Command
   | CmdKind UnbndType
   | CmdCtx
   | CmdDump Stmt
+  | CmdDumpCtx
   | CmdResolved UnbndTerm
   | CmdQuit
   deriving Show

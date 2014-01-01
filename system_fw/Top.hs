@@ -12,6 +12,7 @@ data StmtRes
   | ResShowKind Kind
   | ResShowCtx TopCtx
   | ResDumpStmt Stmt
+  | ResDumpCtx TopCtx
   | ResDumpTerm (Term NameBind)
   | ResOk
   deriving Show
@@ -46,6 +47,8 @@ execStmt topCtx stmt = case stmt of
       Right (topCtx,ResShowCtx topCtx,True)
     CmdDump stmt ->
       Right (topCtx,ResDumpStmt stmt,True)
+    CmdDumpCtx ->
+      Right (topCtx,ResDumpCtx topCtx,True)
     CmdResolved uTerm -> do
       t <- resolveTerm topCtx uTerm
       Right (topCtx,ResDumpTerm t,True)

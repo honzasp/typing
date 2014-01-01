@@ -30,17 +30,19 @@ cmd = trySym ":" >> choice
   , tryWord "k" >> CmdKind <$> ty
   , tryWord "ctx" >> return CmdCtx
   , tryWord "dump" >> CmdDump <$> stmt
+  , tryWord "dumpctx" >> return CmdDumpCtx
   , tryWord "resolved" >> CmdResolved <$> term
   , tryWord "q" >> return CmdQuit
   ] <?> "command"
 
 term :: Parser (Term String)
 term = term5 <?> "term" where
-  term5 = termAbs <|> termTAbs <|> termIf <|> term4
+  term5 = termAbs <|> termTAbs <|> termIf <|> termCase <|> term4
   term4 = termAs
   term3 = termApps
   term2 = termProjs
-  term1 = termBool <|> termUnit <|> termVar <|> termRcd <|> paren term
+  term1 = termBool <|> termUnit <|> termVar <|>
+          termRcd <|> termVariant <|> paren term
 
   termAbs = TmAbs 
     <$> (trySym "\\" >> identifier)
@@ -56,6 +58,14 @@ term = term5 <?> "term" where
     <$> (tryWord "if" >> term5)
     <*> (word "then" >> term5)
     <*> (word "else" >> term5)
+
+  termCase = TmCase
+    <$> between (tryWord "case") (word "of") term5
+    <*> alt `sepBy` sym ","
+  alt = (,,) 
+    <$> (sym "<" >> identifier)
+    <*> (sym "=" >> identifier)
+    <*> (sym ">" >> sym "." >> term5)
 
   termAs = do
     t <- term3
@@ -81,6 +91,11 @@ term = term5 <?> "term" where
   termRcd = TmRcd <$> between (trySym "{") (sym "}") (field `sepBy` sym ",") where
     field = (,) <$> identifier <*> (sym "=" >> term)
 
+  termVariant = TmVariant
+    <$> (trySym "<" >> identifier)
+    <*> (sym "=" >> term)
+    <* sym ">"
+
   termVar = TmVar <$> try identifier
   termBool = TmTrue <$ tryWord "true" <|> TmFalse <$ tryWord "false"
   termUnit = TmUnit <$ tryWord "unit"
@@ -90,7 +105,8 @@ ty = ty4 <?> "type" where
   ty4 = tyAll <|> tyAbs <|> ty3
   ty3 = tyArrs
   ty2 = tyApps
-  ty1 = tyBool <|> tyUnit <|> tyVar <|> tyRcd <|> paren ty
+  ty1 = tyBool <|> tyUnit <|> tyVar <|> 
+    tyRcd <|> tyVariant <|> paren ty
 
   tyAll = TyAll
     <$> (trySym "\\/" >> identifier)
@@ -107,6 +123,8 @@ ty = ty4 <?> "type" where
 
   tyRcd = TyRcd <$> between (trySym "{") (sym "}") (field `sepBy` sym ",") where
     field = (,) <$> identifier <*> (sym "=" >> ty4)
+  tyVariant = TyVariant <$> between (trySym "<") (sym ">") (variant `sepBy` sym ",") where
+    variant = (,) <$> identifier <*> (sym "=" >> ty4)
 
   tyBool = TyBool <$ tryWord "Bool"
   tyUnit = TyUnit <$ tryWord "Unit"
@@ -140,8 +158,8 @@ identifier = id >>= notKeyword <?> "identifier" where
   notKeyword w = if w `elem` keywords
     then unexpected $ "keyword `" ++ w ++ "`"
     else return w
-  keywords = ["if", "then", "else", "as"]
+  keywords = ["if", "then", "else", "as", "case", "of"]
 
 idStartChar, idChar :: Parser Char
-idStartChar = letter
+idStartChar = letter <|> oneOf "_"
 idChar = alphaNum <|> oneOf "_'"

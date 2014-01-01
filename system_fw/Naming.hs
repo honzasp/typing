@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 module Naming
 ( resolveTerm, resolveType, resolveValue
@@ -62,6 +63,9 @@ walkTerm ctx bind use = walk ctx where
     TmAs t1 ty2 -> TmAs <$> walk ctx t1 <*> walkTy ctx ty2
     TmRcd fs -> TmRcd . zip (map fst fs) <$> mapM (walk ctx) (map snd fs)
     TmProj t1 f -> TmProj <$> walk ctx t1 <*> pure f
+    TmVariant l t1 -> TmVariant l <$> walk ctx t1
+    TmCase t1 alts -> TmCase <$> walk ctx t1 <*> mapM walkAlt alts
+      where walkAlt (l,x,t') = let (ctx',x') = bind ctx x in (l,x',) <$> walk ctx' t'
     TmTrue -> pure TmTrue
     TmFalse -> pure TmFalse
     TmUnit -> pure TmUnit
@@ -82,6 +86,7 @@ walkType ctx bind use = walkTy ctx where
       where (ctx',x') = bind ctx x
     TyArr ty1 ty2 -> TyArr <$> walkTy ctx ty1 <*> walkTy ctx ty2
     TyRcd fs -> TyRcd . zip (map fst fs) <$> mapM (walkTy ctx) (map snd fs)
+    TyVariant vs -> TyVariant . zip (map fst vs) <$> mapM (walkTy ctx) (map snd vs)
     TyBool -> pure TyBool
     TyUnit -> pure TyUnit
 
@@ -94,10 +99,12 @@ walkValue :: (Applicative m, Monad m)
 walkValue ctx bind use = walk ctx where
   walkTe ctx = walkTerm ctx bind use
   walk ctx v = case v of
-    ValAbs x t2 env -> ValAbs x' <$> walkTe ctx t2 <*> mapM (walk ctx') env
+    ValAbs x t2 env cctx -> ValAbs x' <$> walkTe ctx t2 <*> mapM (walk ctx') env <*> pure cctx
       where (ctx',x') = bind ctx x
-    ValTAbs x t2 env -> ValTAbs x' <$> walkTe ctx t2 <*> mapM (walk ctx') env
+    ValTAbs x t2 env cctx -> ValTAbs x' <$> walkTe ctx t2 <*> mapM (walk ctx') env <*> pure cctx
       where (ctx',x') = bind ctx x
     ValRcd fs -> ValRcd . zip (map fst fs) <$> mapM (walk ctx) (map snd fs)
+    ValVariant l v1 -> ValVariant l <$> walk ctx v1
     ValBool b -> pure $ ValBool b
     ValUnit -> pure $ ValUnit
+    ValDummyType -> pure $ ValDummyType

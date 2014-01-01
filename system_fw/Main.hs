@@ -65,8 +65,9 @@ execReplStmts topCtx (stmt:stmts) = do
         pValue v <+> text ":" <+> pType ty
       ResShowType ty -> putStrLn . render $ pType ty
       ResShowKind k -> putStrLn . render $ ppKind k
-      ResShowCtx topCtx -> putStrLn . render . vcat $ pCtx topCtx
+      ResShowCtx ctx -> putStrLn . render . vcat $ pCtx ctx
       ResDumpStmt stmt -> putStrLn . show $ stmt
+      ResDumpCtx ctx -> putStrLn . show $ ctx
       ResDumpTerm t -> putStrLn . show $ t
       ResOk -> return ()
 

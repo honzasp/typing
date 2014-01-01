@@ -32,6 +32,14 @@ ppTerm = ppTermP (3::Int) where
         where field (x,t') = text x <> text "=" <> ppTermP 5 t'
       TmProj t1 f -> (2,) $
         ppTermP 2 t1 <> text "." <> text f
+      TmVariant l t1 -> (1,) $
+        text "<" <> text l <> text "=" <> ppTermP 5 t1 <> text ">"
+      TmCase t1 alts -> (5,) $
+        text "case" <+> ppTermP 4 t1 <+> text "of" <+>
+        (hcat . punctuate (text ",") $ map alt alts)
+        where alt (l,x,t') =
+                text "<" <> text l <> text "=" <> text ">" <>
+                text "." <> ppTermP 4 t'
       TmTrue -> (1,) $ text "true"
       TmFalse -> (1,) $ text "false"
       TmUnit -> (1,) $ text "unit"
@@ -56,6 +64,9 @@ ppType = ppTypeP (4::Int) where
       TyRcd fs -> (1,) $
         braces . cat . punctuate (text ",") $ map field fs
         where field (x,ty') = text x <> text "=" <> ppTypeP 4 ty'
+      TyVariant vs -> (1,) $
+        text "<" <> (cat . punctuate (text ",") $ map variant vs) <> text ">"
+        where variant (l,ty') = text l <> text "=" <> ppTypeP 4 ty'
       TyBool -> (1,) $ text "Bool"
       TyUnit -> (1,) $ text "Unit"
 
@@ -73,10 +84,12 @@ ppKind = ppKindP (2::Int) where
 
 ppValue :: Value v -> Doc
 ppValue v = case v of
-  ValAbs {} -> text "#fun"
-  ValTAbs {} -> text "#tfun"
+  ValAbs {} -> text "!fun"
+  ValTAbs {} -> text "!tfun"
   ValRcd fs -> braces . cat . punctuate (text ",") $ map field fs
     where field (x,v') = text x <> text "=" <> ppValue v'
+  ValVariant l v1 -> text "<" <> text l <> text "=" <> ppValue v1 <> text ">"
   ValBool True -> text "true"
   ValBool False -> text "false"
   ValUnit -> text "unit"
+  ValDummyType -> text "!type"

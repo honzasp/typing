@@ -76,3 +76,27 @@ Monoid_Bool_or =
 
 mdouble = /\m.\monoid:Monoid m.
   \x:m. monoid#mappend x x.
+
+Option := \a.<none=Unit,some=a>.
+none = /\a.<none=unit> as Option a.
+some = /\a.\x:a.<some=x> as Option a.
+is_some = /\a.\opt:Option a.
+  case opt of
+    <none=_>. false,
+    <some=_>. true.
+
+Result := \e.\a.<ok=a,err=e>.
+ok = /\e./\a.\x:a.<ok=x> as Result e a.
+err = /\e./\a.\y:e.<err=y> as Result e a.
+
+map_option = /\a./\b. \f:a->b. \opt:Option a.
+  case opt of
+    <some=x>. some[b] (f x),
+    <none=_>. none[b].
+
+:a case <x=true> of <x=a>. a.
+:a case <a=true> as <a=Bool,b=Unit> of
+  <a=a>. a,
+  <b=_>. false.
+:a is_some[Bool] (some[Bool] false).
+:a not (is_some[Unit] (none[Unit])).
