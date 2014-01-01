@@ -13,6 +13,7 @@ data Term v
   | TmVariant String (Term v)
   | TmCase (Term v) [(String,String,Term v)]
   | TmLet String (Term v) (Term v)
+  | TmInt Integer
   | TmTrue 
   | TmFalse
   | TmUnit
@@ -26,6 +27,7 @@ data Type v
   | TyArr (Type v) (Type v)
   | TyRcd [(String,Type v)]
   | TyVariant [(String,Type v)]
+  | TyInt
   | TyBool
   | TyUnit
   deriving Show
@@ -40,6 +42,7 @@ data Value v
   | ValRcd [(String,Value v)]
   | ValVariant String (Value v)
   | ValBool Bool
+  | ValInt Integer
   | ValUnit
   | ValDummyType
   deriving Show

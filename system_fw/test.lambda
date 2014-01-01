@@ -112,3 +112,5 @@ fun2 <- \x:Bool. not (fun1 x).
 
 :a let x=true in x.
 :a let x=not true in if x then false else true.
+
+:a (\x:Int.true) 10.

@@ -99,6 +99,7 @@ typecheck topCtx bnds t = check bnds t where
     TmLet _ t1 t2 -> do
       ty1 <- check bnds t1
       check (BindTermVar ty1:bnds) t2
+    TmInt _ -> Right TyInt
     TmTrue -> Right TyBool
     TmFalse -> Right TyBool
     TmUnit -> Right TyUnit
@@ -143,6 +144,7 @@ kindcheck topCtx = check where
       if all (== KiStar) ks
         then Right KiStar
         else Left "All variants must have star kind"
+    TyInt -> Right KiStar
     TyBool -> Right KiStar
     TyUnit -> Right KiStar
 
@@ -171,6 +173,7 @@ typeEquiv topCtx = equiv where
       labelsEquiv fs1 fs2
     (TyVariant vs1,TyVariant vs2) ->
       labelsEquiv vs1 vs2
+    (TyInt,TyInt) -> True
     (TyBool,TyBool) -> True
     (TyUnit,TyUnit) -> True
     (_,_) -> False
@@ -231,5 +234,6 @@ typeMap onvar = walk 0 where
     TyArr ty1 ty2 -> TyArr (walk c ty1) (walk c ty2)
     TyRcd fs -> TyRcd (map (walk c <$>) fs)
     TyVariant vs -> TyVariant (map (walk c <$>) vs)
+    TyInt -> TyInt
     TyBool -> TyBool
     TyUnit -> TyUnit

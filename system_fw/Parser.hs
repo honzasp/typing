@@ -44,7 +44,7 @@ term = term5 <?> "term" where
   term4 = termAs
   term3 = termApps
   term2 = termProjs
-  term1 = termBool <|> termUnit <|> termVar <|>
+  term1 = termBool <|> termUnit <|> termInt <|> termVar <|>
           termRcd <|> termVariant <|> paren term
 
   termAbs = TmAbs 
@@ -107,13 +107,14 @@ term = term5 <?> "term" where
   termVar = TmVar <$> try identifier
   termBool = TmTrue <$ tryWord "true" <|> TmFalse <$ tryWord "false"
   termUnit = TmUnit <$ tryWord "unit"
+  termInt = TmInt <$> try nat
 
 ty :: Parser (Type String)
 ty = ty4 <?> "type" where
   ty4 = tyAll <|> tyAbs <|> ty3
   ty3 = tyArrs
   ty2 = tyApps
-  ty1 = tyBool <|> tyUnit <|> tyVar <|> 
+  ty1 = tyBool <|> tyUnit <|> tyInt <|> tyVar <|>
     tyRcd <|> tyVariant <|> paren ty
 
   tyAll = TyAll
@@ -136,6 +137,7 @@ ty = ty4 <?> "type" where
 
   tyBool = TyBool <$ tryWord "Bool"
   tyUnit = TyUnit <$ tryWord "Unit"
+  tyInt = TyInt <$ tryWord "Int"
   tyVar = TyVar <$> try identifier
 
 kind :: Parser Kind
@@ -159,6 +161,9 @@ word w = string w >> notFollowedBy idChar >> spaces
 trySym, tryWord :: String -> Parser ()
 trySym = try . sym
 tryWord = try . word
+
+nat :: Parser Integer
+nat = read <$> many1 digit
 
 identifier :: Parser String
 identifier = id >>= notKeyword <?> "identifier" where

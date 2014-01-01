@@ -40,6 +40,7 @@ evalCtx topCtx = eval where
           Just (_,_,t2) = L.find (\(l',_,_) -> l' == l) alts
       in  eval (v11:env) t2
     TmLet _ t1 t2 -> eval (eval env t1:env) t2
+    TmInt i -> ValInt i
     TmTrue -> ValBool True
     TmFalse -> ValBool False
     TmUnit -> ValUnit

@@ -68,6 +68,7 @@ walkTerm ctx bind use = walk ctx where
       where walkAlt (l,x,t') = let (ctx',x') = bind ctx x in (l,x',) <$> walk ctx' t'
     TmLet x t1 t2 -> TmLet x' <$> walk ctx t1 <*> walk ctx' t2
       where (ctx',x') = bind ctx x
+    TmInt i -> pure (TmInt i)
     TmTrue -> pure TmTrue
     TmFalse -> pure TmFalse
     TmUnit -> pure TmUnit
@@ -89,6 +90,7 @@ walkType ctx bind use = walkTy ctx where
     TyArr ty1 ty2 -> TyArr <$> walkTy ctx ty1 <*> walkTy ctx ty2
     TyRcd fs -> TyRcd . zip (map fst fs) <$> mapM (walkTy ctx) (map snd fs)
     TyVariant vs -> TyVariant . zip (map fst vs) <$> mapM (walkTy ctx) (map snd vs)
+    TyInt -> pure TyInt
     TyBool -> pure TyBool
     TyUnit -> pure TyUnit
 
@@ -107,6 +109,7 @@ walkValue ctx bind use = walk ctx where
       where (ctx',x') = bind ctx x
     ValRcd fs -> ValRcd . zip (map fst fs) <$> mapM (walk ctx) (map snd fs)
     ValVariant l v1 -> ValVariant l <$> walk ctx v1
-    ValBool b -> pure $ ValBool b
-    ValUnit -> pure $ ValUnit
-    ValDummyType -> pure $ ValDummyType
+    ValInt i -> pure (ValInt i)
+    ValBool b -> pure (ValBool b)
+    ValUnit -> pure ValUnit
+    ValDummyType -> pure ValDummyType
