@@ -100,3 +100,12 @@ map_option = /\a./\b. \f:a->b. \opt:Option a.
   <b=_>. false.
 :a is_some[Bool] (some[Bool] false).
 :a not (is_some[Unit] (none[Unit])).
+
+value <- not true.
+nvalue <- not value.
+:a nvalue.
+:a not value.
+
+fun1 <- \x:Bool. not x.
+fun2 <- \x:Bool. not (fun1 x).
+:a fun2 true.

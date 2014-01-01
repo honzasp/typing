@@ -6,6 +6,7 @@ import Typing
 
 data StmtRes
   = ResTermBound String (Term NameBind) (Type NameBind)
+  | ResValueBound String (Value NameBind) (Type NameBind)
   | ResTypeBound String (Type NameBind) Kind
   | ResEval (Value NameBind) (Type NameBind)
   | ResShowType (Type NameBind)
@@ -22,6 +23,10 @@ execStmt topCtx stmt = case stmt of
   StmtTermAbbr abbr uTerm -> do
     (t,ty) <- termType uTerm
     Right ((abbr,TopTermAbbr t ty):topCtx,ResTermBound abbr t ty,True)
+  StmtValueBind name uTerm -> do
+    (t,ty) <- termType uTerm
+    let v = evaluate topCtx t
+    Right ((name,TopValueBind v ty):topCtx,ResValueBound name v ty,True)
   StmtTypeAbbr abbr uType -> do
     (ty,k) <- typeKind uType
     Right ((abbr,TopTypeAbbr ty k):topCtx,ResTypeBound abbr ty k,True)

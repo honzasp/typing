@@ -26,6 +26,7 @@ typecheck topCtx bnds t = check bnds t where
       BindTypeVar _ -> Left $ "Type variable used in place of term"
     TmVar (TopBind idx) -> case snd $ topCtx !! idx of
       TopTermAbbr _ ty -> Right $ typeShiftTop (idx+1) ty
+      TopValueBind _ ty -> Right $ typeShiftTop (idx+1) ty
       TopTypeAbbr _ _ -> Left $ "Type abbreviation used in place of term"
     TmAbs _ ty1 t2 -> do
       k1 <- kindcheck topCtx bnds ty1 
@@ -107,7 +108,8 @@ kindcheck topCtx = check where
       BindTermVar _ -> Left $ "Term variable used in place of type"
     TyVar (TopBind idx) -> case snd $ topCtx !! idx of
       TopTypeAbbr ty k -> Right k
-      TopTermAbbr _ _ -> Left $ "Term abbreviation used in place of type"
+      TopTermAbbr{}  -> Left "Term abbreviation used in place of type"
+      TopValueBind{} -> Left "Top value bind used in place of type"
     TyAbs _ k1 ty2 ->
       KiArr k1 <$> check (BindTypeVar k1:bnds) ty2
     TyApp ty1 ty2 -> do

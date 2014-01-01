@@ -16,9 +16,12 @@ stmts :: Parser [Stmt]
 stmts = M.catMaybes <$> optionMaybe stmt `sepBy` sym "."
 
 stmt :: Parser Stmt
-stmt = stmtTermAbbr <|> stmtTypeAbbr <|> stmtCmd <|> stmtEval <?> "statement"
+stmt =
+  stmtTermAbbr <|> stmtValBind <|> stmtTypeAbbr <|>
+  stmtCmd <|> stmtEval <?> "statement"
   where
   stmtTermAbbr = StmtTermAbbr <$> try (identifier <* sym "=") <*> term
+  stmtValBind = StmtValueBind <$> try (identifier <* sym "<-") <*> term
   stmtTypeAbbr = StmtTypeAbbr <$> try (identifier <* sym ":=") <*> ty
   stmtCmd = StmtCmd <$> cmd
   stmtEval = StmtEval <$> term

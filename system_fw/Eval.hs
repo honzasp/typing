@@ -12,8 +12,11 @@ evalCtx topCtx = eval where
   eval env t = case t of
     TmVar (LocalBind idx) -> env !! idx
     TmVar (TopBind idx) ->
-      let (_,TopTermAbbr t _):topCtx' = drop idx topCtx
-      in  evaluate topCtx' t
+      let (_,bind):topCtx' = drop idx topCtx
+      in  case bind of
+            TopTermAbbr t _ -> evaluate topCtx' t
+            TopValueBind v _ -> v
+            TopTypeAbbr _ _ -> ValDummyType
     TmAbs x _ t2 -> ValAbs x t2 env topCtx
     TmApp t1 t2 ->
       let ValAbs _ t12 env1 topCtx' = eval env t1

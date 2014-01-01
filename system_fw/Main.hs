@@ -59,6 +59,8 @@ execReplStmts topCtx (stmt:stmts) = do
     resIO res = case res of
       ResTermBound x t ty -> putStrLn . render $
         text x <+> text "=" <+> pTerm t <+> text ":" <+> pType ty
+      ResValueBound x v ty -> putStrLn . render $
+        text x <+> text "<-" <+> pValue v <+> text ":" <+> pType ty
       ResTypeBound x ty k -> putStrLn . render $
         text x <+> text ":=" <+> pType ty <+> text "::" <+> ppKind k
       ResEval v ty -> putStrLn . render $
@@ -78,6 +80,9 @@ execReplStmts topCtx (stmt:stmts) = do
     pTopBind (x,bnd) ctx = case bnd of
       TopTermAbbr t ty ->
         text x <+> text "=" <+> ppTerm (renameTerm ctx t) <+>
+        text ":" <+> ppType (renameType ctx ty)
+      TopValueBind v ty ->
+        text x <+> text "<-" <+> ppValue (renameValue ctx v) <+>
         text ":" <+> ppType (renameType ctx ty)
       TopTypeAbbr ty k ->
         text x <+> text ":=" <+> ppType (renameType ctx ty) <+>

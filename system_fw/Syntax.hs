@@ -46,6 +46,7 @@ data Value v
 
 data Stmt
   = StmtTermAbbr String UnbndTerm
+  | StmtValueBind String UnbndTerm
   | StmtTypeAbbr String UnbndType
   | StmtEval UnbndTerm
   | StmtCmd Command
@@ -72,6 +73,7 @@ type TopCtx = [(String,TopBind)]
 
 data TopBind
   = TopTermAbbr (Term NameBind) (Type NameBind)
+  | TopValueBind (Value NameBind) (Type NameBind)
   | TopTypeAbbr (Type NameBind) Kind
   deriving Show
 
