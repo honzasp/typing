@@ -44,8 +44,7 @@ term = term5 <?> "term" where
   term4 = termAs
   term3 = termApps
   term2 = termProjs
-  term1 = termBool <|> termUnit <|> termInt <|> termVar <|>
-          termRcd <|> termVariant <|> paren term
+  term1 = termInt <|> termVar <|> termRcd <|> termVariant <|> paren term
 
   termAbs = TmAbs 
     <$> (trySym "\\" >> identifier)
@@ -105,8 +104,6 @@ term = term5 <?> "term" where
     <* sym ">"
 
   termVar = TmVar <$> try identifier
-  termBool = TmTrue <$ tryWord "true" <|> TmFalse <$ tryWord "false"
-  termUnit = TmUnit <$ tryWord "unit"
   termInt = TmInt <$> try nat
 
 ty :: Parser (Type String)
@@ -114,8 +111,7 @@ ty = ty4 <?> "type" where
   ty4 = tyAll <|> tyAbs <|> ty3
   ty3 = tyArrs
   ty2 = tyApps
-  ty1 = tyBool <|> tyUnit <|> tyInt <|> tyVar <|>
-    tyRcd <|> tyVariant <|> paren ty
+  ty1 = tyVar <|> tyRcd <|> tyVariant <|> paren ty
 
   tyAll = TyAll
     <$> (trySym "\\/" >> identifier)
@@ -135,9 +131,6 @@ ty = ty4 <?> "type" where
   tyVariant = TyVariant <$> between (trySym "<") (sym ">") (variant `sepBy` sym ",") where
     variant = (,) <$> identifier <*> (sym "=" >> ty4)
 
-  tyBool = TyBool <$ tryWord "Bool"
-  tyUnit = TyUnit <$ tryWord "Unit"
-  tyInt = TyInt <$ tryWord "Int"
   tyVar = TyVar <$> try identifier
 
 kind :: Parser Kind

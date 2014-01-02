@@ -26,7 +26,7 @@ evalCtx topCtx = eval where
       let ValTAbs _ t12 env1 topCtx' = eval env t1
       in  evalCtx topCtx' (ValDummyType:env1) t12
     TmIf t1 t2 t3 ->
-      let ValBool cond = eval env t1
+      let ValBase (BValBool cond) = eval env t1
       in  if cond then eval env t2 else eval env t3
     TmAs t1 ty2 -> eval env t1
     TmRcd fs -> ValRcd $ map (eval env <$>) fs
@@ -40,7 +40,4 @@ evalCtx topCtx = eval where
           Just (_,_,t2) = L.find (\(l',_,_) -> l' == l) alts
       in  eval (v11:env) t2
     TmLet _ t1 t2 -> eval (eval env t1:env) t2
-    TmInt i -> ValInt i
-    TmTrue -> ValBool True
-    TmFalse -> ValBool False
-    TmUnit -> ValUnit
+    TmInt i -> ValBase (BValInt i)

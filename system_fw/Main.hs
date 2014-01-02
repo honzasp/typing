@@ -5,6 +5,7 @@ import System.Environment(getArgs)
 import System.IO(hFlush, stdout)
 import Text.PrettyPrint
 
+import Builtin
 import Naming
 import Parser
 import Print
@@ -16,7 +17,7 @@ main = do
   files <- getArgs
   txts <- mapM readFile files
   let stmts = fmap concat . sequence $ zipWith parseStmts files txts 
-  let topCtx = []
+  let topCtx = builtinCtx
   case execFileStmts topCtx <$> stmts of
     Left err -> putStrLn err >> repl topCtx
     Right (topCtx',r) -> case r of

@@ -44,9 +44,6 @@ ppTerm = ppTermP (3::Int) where
         text "let" <+> text x <> text "=" <> ppTermP 4 t1 <+>
         text "in" <+> ppTermP 4 t2
       TmInt i -> (1,) $ text (show i)
-      TmTrue -> (1,) $ text "true"
-      TmFalse -> (1,) $ text "false"
-      TmUnit -> (1,) $ text "unit"
 
 ppType :: Type String -> Doc
 ppType = ppTypeP (4::Int) where
@@ -71,9 +68,10 @@ ppType = ppTypeP (4::Int) where
       TyVariant vs -> (1,) $
         text "<" <> (cat . punctuate (text ",") $ map variant vs) <> text ">"
         where variant (l,ty') = text l <> text "=" <> ppTypeP 4 ty'
-      TyInt -> (1,) $ text "Int"
-      TyBool -> (1,) $ text "Bool"
-      TyUnit -> (1,) $ text "Unit"
+      TyBase bty -> (1,) . text $ case bty of
+        BTyInt -> "Int"
+        BTyBool -> "Bool"
+        BTyUnit -> "Unit"
 
 ppOptKind :: Kind -> Doc
 ppOptKind KiStar = empty
@@ -94,8 +92,10 @@ ppValue v = case v of
   ValRcd fs -> braces . cat . punctuate (text ",") $ map field fs
     where field (x,v') = text x <> text "=" <> ppValue v'
   ValVariant l v1 -> text "<" <> text l <> text "=" <> ppValue v1 <> text ">"
-  ValInt i -> text (show i)
-  ValBool True -> text "true"
-  ValBool False -> text "false"
-  ValUnit -> text "unit"
+  ValFun _ -> text "!bfun"
+  ValBase bv -> case bv of
+    BValInt i -> text (show i)
+    BValBool True -> text "true"
+    BValBool False -> text "false"
+    BValUnit -> text "unit"
   ValDummyType -> text "!type"

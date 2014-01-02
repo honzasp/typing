@@ -14,9 +14,6 @@ data Term v
   | TmCase (Term v) [(String,String,Term v)]
   | TmLet String (Term v) (Term v)
   | TmInt Integer
-  | TmTrue 
-  | TmFalse
-  | TmUnit
   deriving Show
 
 data Type v
@@ -27,9 +24,7 @@ data Type v
   | TyArr (Type v) (Type v)
   | TyRcd [(String,Type v)]
   | TyVariant [(String,Type v)]
-  | TyInt
-  | TyBool
-  | TyUnit
+  | TyBase BaseType
   deriving Show
 
 data Kind = KiStar | KiArr Kind Kind
@@ -41,12 +36,10 @@ data Value v
   | ValTAbs String (Term v) [Value v] TopCtx
   | ValRcd [(String,Value v)]
   | ValVariant String (Value v)
-  | ValBool Bool
-  | ValInt Integer
-  | ValUnit
+  | ValFun BuiltinFun
+  | ValBase BaseValue
   | ValDummyType
   deriving Show
-
 
 data Stmt
   = StmtTermAbbr String UnbndTerm
@@ -84,4 +77,21 @@ data TopBind
 data NameBind
   = LocalBind Int
   | TopBind Int
+  deriving (Show, Eq)
+
+
+newtype BuiltinFun = BuiltinFun (Value NameBind -> Value NameBind)
+instance Show BuiltinFun where
+  show _ = "BuiltinFun _"
+
+data BaseValue
+  = BValInt Integer
+  | BValBool Bool
+  | BValUnit
+  deriving Show
+
+data BaseType
+  = BTyInt
+  | BTyBool
+  | BTyUnit
   deriving (Show, Eq)

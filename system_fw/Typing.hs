@@ -57,7 +57,7 @@ typecheck topCtx bnds t = check bnds t where
       ty1 <- check bnds t1
       ty2 <- check bnds t2
       ty3 <- check bnds t3
-      if typeEquiv topCtx TyBool ty1 then
+      if typeEquiv topCtx (TyBase BTyBool) ty1 then
         if typeEquiv topCtx ty2 ty3 then Right ty2
         else Left "Condition arms do not match"
       else Left "Condition guard must be Bool"
@@ -99,10 +99,7 @@ typecheck topCtx bnds t = check bnds t where
     TmLet _ t1 t2 -> do
       ty1 <- check bnds t1
       check (BindTermVar ty1:bnds) t2
-    TmInt _ -> Right TyInt
-    TmTrue -> Right TyBool
-    TmFalse -> Right TyBool
-    TmUnit -> Right TyUnit
+    TmInt _ -> Right $ TyBase BTyInt
 
 kindcheck :: TopCtx -> [VarBind] -> Type NameBind -> Either String Kind
 kindcheck topCtx = check where
@@ -144,14 +141,15 @@ kindcheck topCtx = check where
       if all (== KiStar) ks
         then Right KiStar
         else Left "All variants must have star kind"
-    TyInt -> Right KiStar
-    TyBool -> Right KiStar
-    TyUnit -> Right KiStar
+    TyBase bty -> Right $ case bty of
+      BTyInt -> KiStar
+      BTyBool -> KiStar
+      BTyUnit -> KiStar
 
 typeWhnf :: TopCtx -> Type NameBind -> Type NameBind
 typeWhnf topCtx ty = case ty of
   TyVar (TopBind idx) | let TopTypeAbbr ty1 _ = snd $ topCtx !! idx ->
-    typeShiftTop (-idx-1) $ typeWhnf topCtx (typeShiftTop (idx+1) ty1)
+    typeWhnf topCtx (typeShiftTop (idx+1) ty1)
   TyApp ty1 ty2 | TyAbs _ k11 ty12 <- typeWhnf topCtx ty1 ->
     typeWhnf topCtx $ typeApply ty2 ty12
   ty -> ty
@@ -173,9 +171,8 @@ typeEquiv topCtx = equiv where
       labelsEquiv fs1 fs2
     (TyVariant vs1,TyVariant vs2) ->
       labelsEquiv vs1 vs2
-    (TyInt,TyInt) -> True
-    (TyBool,TyBool) -> True
-    (TyUnit,TyUnit) -> True
+    (TyBase bty1,TyBase bty2) ->
+      bty1 == bty2
     (_,_) -> False
 
   labelsEquiv [] [] = True
@@ -234,6 +231,4 @@ typeMap onvar = walk 0 where
     TyArr ty1 ty2 -> TyArr (walk c ty1) (walk c ty2)
     TyRcd fs -> TyRcd (map (walk c <$>) fs)
     TyVariant vs -> TyVariant (map (walk c <$>) vs)
-    TyInt -> TyInt
-    TyBool -> TyBool
-    TyUnit -> TyUnit
+    TyBase bty -> TyBase bty
