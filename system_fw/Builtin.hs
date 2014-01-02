@@ -5,7 +5,7 @@ type Val = Value NameBind
 
 builtinCtx :: TopCtx
 builtinCtx =
-  base ++ intFuns
+  base ++ intFuns ++ floatFuns
   where
   base =
     [ ("true", TopValueBind (wrapB True) tyBool)
@@ -30,10 +30,23 @@ builtinCtx =
           iib f = lift2 $ \a b -> wrapB $ unwrapI a `f` unwrapI b
           iibTy = tyInt --> tyInt --> tyBool
 
+  floatFuns =
+    [ ("fadd", TopValueBind (fff (+)) fffTy)
+    , ("fsub", TopValueBind (fff (-)) fffTy)
+    , ("fmul", TopValueBind (fff (*)) fffTy)
+    , ("fdiv", TopValueBind (fff (/)) fffTy)
+    , ("feq", TopValueBind (ffb (==)) ffbTy)
+    ]
+    where fff f = lift2 $ \a b -> wrapF $ unwrapF a `f` unwrapF b
+          fffTy = tyFloat --> tyFloat --> tyFloat
+          ffb f = lift2 $ \a b -> wrapB $ unwrapF a `f` unwrapF b
+          ffbTy = tyFloat --> tyFloat --> tyBool
+
   infixr 3 -->
   (-->) = TyArr
 
   tyInt = TyBase BTyInt
+  tyFloat = TyBase BTyFloat
   tyBool = TyBase BTyBool
   tyUnit = TyBase BTyUnit
 
@@ -41,9 +54,13 @@ builtinCtx =
   unwrapI (ValBase (BValInt i)) = i
   unwrapI _ = error "Builtin function expected Int"
 
+  wrapF = ValBase . BValFloat
+  unwrapF (ValBase (BValFloat f)) = f
+  unwrapF _ = error "Builtin function expected Float"
+
   wrapB = ValBase . BValBool
-  unwrapB (ValBase (BValBool b)) = b
-  unwrapB _ = error "Builtin function expected Bool"
+  --unwrapB (ValBase (BValBool b)) = b
+  --unwrapB _ = error "Builtin function expected Bool"
 
   wrapU = ValBase $ BValUnit
 

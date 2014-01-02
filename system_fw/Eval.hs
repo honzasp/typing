@@ -18,9 +18,10 @@ evalCtx topCtx = eval where
             TopValueBind v _ -> v
             TopTypeAbbr _ _ -> ValDummyType
     TmAbs x _ t2 -> ValAbs x t2 env topCtx
-    TmApp t1 t2 ->
-      let ValAbs _ t12 env1 topCtx' = eval env t1
-      in  evalCtx topCtx' (eval env t2:env1) t12
+    TmApp t1 t2 -> case eval env t1 of
+      ValAbs _ t12 env1 topCtx' -> evalCtx topCtx' (eval env t2:env1) t12
+      ValFun (BuiltinFun f) -> f (eval env t2)
+      _ -> error "A non-function value applied"
     TmTAbs x _ t2 -> ValTAbs x t2 env topCtx
     TmTApp t1 _ -> 
       let ValTAbs _ t12 env1 topCtx' = eval env t1
@@ -41,3 +42,4 @@ evalCtx topCtx = eval where
       in  eval (v11:env) t2
     TmLet _ t1 t2 -> eval (eval env t1:env) t2
     TmInt i -> ValBase (BValInt i)
+    TmFloat f -> ValBase (BValFloat f)

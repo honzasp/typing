@@ -44,6 +44,7 @@ ppTerm = ppTermP (3::Int) where
         text "let" <+> text x <> text "=" <> ppTermP 4 t1 <+>
         text "in" <+> ppTermP 4 t2
       TmInt i -> (1,) $ text (show i)
+      TmFloat f -> (1,) $ text (show f)
 
 ppType :: Type String -> Doc
 ppType = ppTypeP (4::Int) where
@@ -70,6 +71,7 @@ ppType = ppTypeP (4::Int) where
         where variant (l,ty') = text l <> text "=" <> ppTypeP 4 ty'
       TyBase bty -> (1,) . text $ case bty of
         BTyInt -> "Int"
+        BTyFloat -> "Float"
         BTyBool -> "Bool"
         BTyUnit -> "Unit"
 
@@ -95,6 +97,7 @@ ppValue v = case v of
   ValFun _ -> text "!bfun"
   ValBase bv -> case bv of
     BValInt i -> text (show i)
+    BValFloat f -> text (show f)
     BValBool True -> text "true"
     BValBool False -> text "false"
     BValUnit -> text "unit"

@@ -114,3 +114,18 @@ fun2 <- \x:Bool. not (fun1 x).
 :a let x=not true in if x then false else true.
 
 :a (\x:Int.true) 10.
+
+:a ieq 10 10.
+:a not (ieq 2 1).
+:a ieq (iadd 2 3) 5.
+:a ieq (isub 30 2) 28.
+:a ieq (imul 3 4) 12.
+:a ieq (idiv 12 3) 4.
+:a ieq (imod 14 3) 2.
+
+:a feq 2.0 2.0.
+:a not (feq 1.0 0.5).
+:a feq (fadd 1.0 0.5) 1.5.
+:a feq (fsub 7.5 3.25) 4.25.
+:a feq (fmul 0.5 1.2) 0.6.
+:a feq (fdiv 4.5 1.5) 3.0.

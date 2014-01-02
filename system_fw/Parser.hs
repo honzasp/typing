@@ -44,7 +44,8 @@ term = term5 <?> "term" where
   term4 = termAs
   term3 = termApps
   term2 = termProjs
-  term1 = termInt <|> termVar <|> termRcd <|> termVariant <|> paren term
+  term1 = termFloat <|> termInt <|> termVar <|>
+    termRcd <|> termVariant <|> paren term
 
   termAbs = TmAbs 
     <$> (trySym "\\" >> identifier)
@@ -105,6 +106,7 @@ term = term5 <?> "term" where
 
   termVar = TmVar <$> try identifier
   termInt = TmInt <$> try nat
+  termFloat = TmFloat <$> try float
 
 ty :: Parser (Type String)
 ty = ty4 <?> "type" where
@@ -156,7 +158,13 @@ trySym = try . sym
 tryWord = try . word
 
 nat :: Parser Integer
-nat = read <$> many1 digit
+nat = read <$> many1 digit <* spaces
+
+float :: Parser Float
+float = do
+  a <- try (many digit <* char '.')
+  b <- many1 digit <* spaces
+  return . read $ a ++ "." ++ b
 
 identifier :: Parser String
 identifier = id >>= notKeyword <?> "identifier" where

@@ -69,6 +69,7 @@ walkTerm ctx bind use = walk ctx where
     TmLet x t1 t2 -> TmLet x' <$> walk ctx t1 <*> walk ctx' t2
       where (ctx',x') = bind ctx x
     TmInt i -> pure (TmInt i)
+    TmFloat f -> pure (TmFloat f)
 
 walkType :: (Applicative m, Monad m)
   => ctx

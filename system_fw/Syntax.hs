@@ -14,6 +14,7 @@ data Term v
   | TmCase (Term v) [(String,String,Term v)]
   | TmLet String (Term v) (Term v)
   | TmInt Integer
+  | TmFloat Float
   deriving Show
 
 data Type v
@@ -86,12 +87,14 @@ instance Show BuiltinFun where
 
 data BaseValue
   = BValInt Integer
+  | BValFloat Float
   | BValBool Bool
   | BValUnit
   deriving Show
 
 data BaseType
   = BTyInt
+  | BTyFloat
   | BTyBool
   | BTyUnit
   deriving (Show, Eq)

@@ -100,6 +100,7 @@ typecheck topCtx bnds t = check bnds t where
       ty1 <- check bnds t1
       check (BindTermVar ty1:bnds) t2
     TmInt _ -> Right $ TyBase BTyInt
+    TmFloat _ -> Right $ TyBase BTyFloat
 
 kindcheck :: TopCtx -> [VarBind] -> Type NameBind -> Either String Kind
 kindcheck topCtx = check where
@@ -143,6 +144,7 @@ kindcheck topCtx = check where
         else Left "All variants must have star kind"
     TyBase bty -> Right $ case bty of
       BTyInt -> KiStar
+      BTyFloat -> KiStar
       BTyBool -> KiStar
       BTyUnit -> KiStar
 
